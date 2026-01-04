@@ -1,0 +1,8 @@
+[functions.send-otp-email]
+verify_jwt = false
+
+[functions.send-ticket-email]
+verify_jwt = false
+
+[functions.send-reservation-email]
+verify_jwt = false

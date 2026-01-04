@@ -1,0 +1,149 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { MapPin, Phone, Mail, Instagram, Facebook } from 'lucide-react'
+import { getAllSiteSettings } from '@/lib/queries'
+
+export default function Footer() {
+  const [siteInfo, setSiteInfo] = useState({
+    restaurant_name: '',
+    address: '',
+    phone: '',
+    email: '',
+    instagram_user_id: '',
+    instagram_url: '',
+    facebook_user_id: '',
+    facebook_url: ''
+  })
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch all site settings
+        const settings = await getAllSiteSettings()
+        
+        // Extract username from URL or use as-is
+        const extractUsername = (value: string): { username: string; url: string } => {
+          const trimmed = value.toString().trim()
+          if (!trimmed) return { username: '', url: '' }
+          
+          // Remove @ if present
+          let cleaned = trimmed.replace(/^@/, '')
+          
+          // Extract username from URL
+          const instagramMatch = cleaned.match(/(?:instagram\.com\/|^)([^\/\?]+)/i)
+          const facebookMatch = cleaned.match(/(?:facebook\.com\/|^)([^\/\?]+)/i)
+          
+          if (instagramMatch && instagramMatch[1]) {
+            const username = instagramMatch[1]
+            return { username, url: `https://instagram.com/${username}` }
+          }
+          if (facebookMatch && facebookMatch[1]) {
+            const username = facebookMatch[1]
+            return { username, url: `https://facebook.com/${username}` }
+          }
+          
+          // If no URL pattern, assume it's just a username
+          return { username: cleaned, url: cleaned.startsWith('http') ? cleaned : '' }
+        }
+        
+        const instagramData = extractUsername(settings.instagram_user_id || '')
+        const facebookData = extractUsername(settings.facebook_user_id || '')
+        
+        setSiteInfo({
+          restaurant_name: settings.restaurant_name || '',
+          address: settings.restaurant_address || settings.address || '',
+          phone: settings.restaurant_phone || settings.phone || '',
+          email: settings.restaurant_email || settings.email || '',
+          instagram_user_id: instagramData.username,
+          instagram_url: instagramData.url,
+          facebook_user_id: facebookData.username,
+          facebook_url: facebookData.url
+        })
+
+      } catch (error) {
+        console.error('Error fetching footer data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
+
+  return (
+    <footer className="footer-dark pt-10 pb-6 animate-fade-in-up">
+      <div className="container-global">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 mb-6">
+          {/* Address & Contact */}
+          <div className="animate-fade-in-up stagger-1">
+            <h3 className="card-title mb-2">Location</h3>
+            <div className="space-y-1.5">
+              <div className="flex items-start gap-2 text-sm text-[#D1D5DB]">
+                <MapPin className="h-4 w-4 text-[#F59E0B] flex-shrink-0 mt-0.5" />
+                <p>{siteInfo.address}</p>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-[#D1D5DB]">
+                <Phone className="h-4 w-4 text-[#F59E0B] flex-shrink-0" />
+                <a 
+                  href={`tel:${siteInfo.phone.replace(/\D/g, '')}`} 
+                  className="hover:text-[#F59E0B] transition-colors"
+                >
+                  {siteInfo.phone}
+                </a>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-[#D1D5DB]">
+                <Mail className="h-4 w-4 text-[#F59E0B] flex-shrink-0" />
+                <a 
+                  href={`mailto:${siteInfo.email}`} 
+                  className="hover:text-[#F59E0B] transition-colors break-all"
+                >
+                  {siteInfo.email}
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* Social */}
+          <div className="animate-fade-in-up stagger-2">
+            <h3 className="card-title mb-2">Connect</h3>
+            <div className="space-y-2.5">
+              {siteInfo.instagram_user_id && (
+                <a
+                  href={siteInfo.instagram_url || `https://instagram.com/${siteInfo.instagram_user_id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-sm text-[#D1D5DB] hover:text-[#F59E0B] transition-colors"
+                  aria-label="Instagram"
+                >
+                  <Instagram className="h-4 w-4 text-[#F59E0B] flex-shrink-0" />
+                  <span>@{siteInfo.instagram_user_id}</span>
+                </a>
+              )}
+              {siteInfo.facebook_user_id && (
+                <a
+                  href={siteInfo.facebook_url || `https://facebook.com/${siteInfo.facebook_user_id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-sm text-[#D1D5DB] hover:text-[#F59E0B] transition-colors"
+                  aria-label="Facebook"
+                >
+                  <Facebook className="h-4 w-4 text-[#F59E0B] flex-shrink-0" />
+                  <span>{siteInfo.facebook_user_id}</span>
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Copyright */}
+        <div className="border-t border-white/10 pt-6 mt-6 text-center">
+          <p className="text-xs text-[#D1D5DB] opacity-70">
+            © {new Date().getFullYear()} {siteInfo.restaurant_name || 'Good Times Bar & Grill'}. All rights reserved.
+          </p>
+        </div>
+      </div>
+    </footer>
+  )
+}
