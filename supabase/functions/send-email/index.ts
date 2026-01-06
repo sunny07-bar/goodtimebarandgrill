@@ -49,11 +49,15 @@ serve(async (req) => {
       );
     }
 
-    // Create transporter
-    const transporter = createTransport({
+    // Detect email provider for proper configuration
+    const isHostinger = smtpHost.includes('hostinger.com') || smtpHost.includes('hpanel.net');
+    const isOffice365 = smtpHost.includes('office365.com') || smtpHost.includes('outlook.com');
+    const isGmail = smtpHost.includes('gmail.com');
+
+    // Configure transporter based on provider
+    const transporterConfig: any = {
       host: smtpHost,
       port: smtpPort,
-      secure: smtpPort === 465,
       auth: {
         user: smtpUser,
         pass: smtpPassword,
@@ -61,7 +65,44 @@ serve(async (req) => {
       tls: {
         rejectUnauthorized: false,
       },
-    });
+    };
+
+    // Hostinger configuration
+    if (isHostinger) {
+      // Hostinger uses port 465 with SSL or port 587 with STARTTLS
+      if (smtpPort === 465) {
+        transporterConfig.secure = true; // Use SSL
+        transporterConfig.requireTLS = false;
+      } else if (smtpPort === 587) {
+        transporterConfig.secure = false; // Use STARTTLS
+        transporterConfig.requireTLS = true;
+      }
+      transporterConfig.tls.minVersion = 'TLSv1.2';
+    } else if (isOffice365) {
+      // Office 365 configuration
+      if (smtpPort === 587) {
+        transporterConfig.secure = false; // Use STARTTLS
+        transporterConfig.requireTLS = true;
+      } else if (smtpPort === 465) {
+        transporterConfig.secure = true; // Use SSL
+      }
+      transporterConfig.tls.minVersion = 'TLSv1.2';
+    } else if (isGmail) {
+      // Gmail configuration
+      if (smtpPort === 587) {
+        transporterConfig.secure = false;
+        transporterConfig.requireTLS = true;
+      } else if (smtpPort === 465) {
+        transporterConfig.secure = true;
+      }
+    } else {
+      // Default/GoDaddy configuration
+      transporterConfig.secure = smtpPort === 465;
+      transporterConfig.requireTLS = smtpPort === 587;
+    }
+
+    // Create transporter
+    const transporter = createTransport(transporterConfig);
 
     // Send email
     const result = await transporter.sendMail({

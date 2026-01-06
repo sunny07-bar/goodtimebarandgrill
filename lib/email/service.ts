@@ -1,11 +1,12 @@
 import nodemailer from 'nodemailer';
 
-// Email service configuration for GoDaddy/Office 365/Custom domains
+// Email service configuration for Hostinger/GoDaddy/Office 365/Custom domains
 function createTransport() {
   const host = process.env.SMTP_HOST || 'smtpout.secureserver.net';
   const port = parseInt(process.env.SMTP_PORT || '587');
   const isOffice365 = host.includes('office365.com') || host.includes('outlook.com');
   const isGmail = host.includes('gmail.com');
+  const isHostinger = host.includes('hostinger.com') || host.includes('hpanel.net');
   
   // Determine if SMTP_USER is a full email or just username
   const smtpUser = process.env.SMTP_USER || '';
@@ -20,8 +21,26 @@ function createTransport() {
     },
   };
 
-  // Office 365 configuration
-  if (isOffice365) {
+  // Hostinger configuration (matches test script exactly)
+  if (isHostinger) {
+    // Hostinger uses port 465 with SSL or port 587 with STARTTLS
+    // Match test script configuration exactly
+    config.secure = port === 465; // true for 465, false for other ports
+    config.tls = {
+      rejectUnauthorized: false,
+      minVersion: 'TLSv1.2',
+    };
+    // Only set requireTLS for port 587 (STARTTLS)
+    if (port === 587) {
+      config.requireTLS = true;
+    }
+    // Don't set requireTLS for port 465 (SSL) - it's not needed and can cause issues
+    // Hostinger requires full email as username
+    if (smtpUser && !smtpUser.includes('@')) {
+      console.warn('[Email] Hostinger typically requires full email address as SMTP_USER');
+    }
+  } else if (isOffice365) {
+    // Office 365 configuration
     if (port === 587) {
       config.secure = false; // Use STARTTLS
       config.requireTLS = true;
@@ -53,8 +72,9 @@ function createTransport() {
     };
   }
 
-  console.log(`[Email] Creating transporter: ${host}:${port} (Office365: ${isOffice365}, Gmail: ${isGmail})`);
+  console.log(`[Email] Creating transporter: ${host}:${port} (Hostinger: ${isHostinger}, Office365: ${isOffice365}, Gmail: ${isGmail})`);
   console.log(`[Email] Auth user: ${smtpUser.includes('@') ? smtpUser : smtpUser + ' (username only)'}`);
+  console.log(`[Email] Security: secure=${config.secure}, requireTLS=${config.requireTLS}`);
   return nodemailer.createTransport(config);
 }
 
@@ -67,10 +87,25 @@ function getConfigHash(): string {
   return `${process.env.SMTP_HOST || ''}-${process.env.SMTP_PORT || ''}-${process.env.SMTP_USER || ''}`;
 }
 
+function isHostingerProvider(): boolean {
+  const host = process.env.SMTP_HOST || '';
+  return host.includes('hostinger.com') || host.includes('hpanel.net');
+}
+
 // Create transporter with caching (only recreate if config changes)
+// Note: For Hostinger, we create a fresh transporter each time as caching can cause auth issues
 function getTransport(): nodemailer.Transporter {
   const currentHash = getConfigHash();
+  const isHostinger = isHostingerProvider();
   
+  // For Hostinger, always create a fresh transporter (don't cache)
+  // This prevents authentication issues that can occur with cached connections
+  if (isHostinger) {
+    console.log('[Email] Creating fresh transporter for Hostinger (caching disabled)');
+    return createTransport();
+  }
+  
+  // For other providers, use caching
   // Reuse cached transporter if config hasn't changed
   if (cachedTransport && lastConfigHash === currentHash) {
     return cachedTransport;
@@ -138,34 +173,79 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
 
     // Skip verification if already verified (saves ~1-2 seconds per email)
     // Only verify on first email or if config changed
+    // Note: Some SMTP servers (like Hostinger) may have issues with verify(),
+    // so we'll attempt sending even if verify fails, and catch errors during actual send
+    let verificationFailed = false;
+    let verificationError: any = null;
+    
     if (!connectionVerified) {
       try {
         await transporter.verify();
         connectionVerified = true;
         console.log('[Email] ✓ SMTP connection verified (cached for future emails)');
       } catch (verifyError: any) {
-        let errorMsg = `SMTP connection failed: ${verifyError.message || 'Unable to connect to email server'}`;
+        // Don't fail immediately - some servers (like Hostinger) may have verify() issues
+        // but still allow actual email sending. We'll try to send anyway.
+        verificationFailed = true;
+        verificationError = verifyError;
+        console.warn('[Email] ⚠️ SMTP verification failed, but attempting to send anyway:', verifyError.message);
+        console.warn('[Email]   (Some SMTP servers have issues with verify() but still allow sending)');
+      }
+    }
+
+    try {
+      const result = await transporter.sendMail({
+        from: `"${fromName}" <${fromEmail}>`,
+        to: options.to,
+        subject: options.subject,
+        html: options.html,
+        text: options.text || options.html.replace(/<[^>]*>/g, ''), // Strip HTML for text version
+        attachments: options.attachments || [],
+      });
+
+      // Mark as verified if send succeeded (even if verify() failed)
+      // Note: For Hostinger, we always create fresh transporters, so connectionVerified stays false
+      // but that's okay since we don't cache for Hostinger anyway
+      if (verificationFailed && !isHostingerProvider() && !connectionVerified) {
+        connectionVerified = true;
+        console.log('[Email] ✓ Email sent successfully (connection verified via send)');
+      }
+
+      // Only log success for first email or in development
+      if (!connectionVerified || process.env.NODE_ENV === 'development' || isHostingerProvider()) {
+        console.log(`[Email] ✓ Sent email to ${options.to}: ${options.subject} (MessageID: ${result.messageId})`);
+      }
+      return { success: true };
+    } catch (sendError: any) {
+      // Clear cached transporter if send fails - force recreation on next attempt
+      // For Hostinger, transporter is always fresh anyway, but clear cache for other providers
+      if (!isHostingerProvider()) {
+        cachedTransport = null;
+      }
+      connectionVerified = false;
+      
+      // If verification also failed, combine error messages
+      if (verificationFailed && sendError.code === 'EAUTH') {
+        let errorMsg = `SMTP authentication failed: ${sendError.message || 'Unable to authenticate with email server'}`;
         
         // Provide helpful guidance based on error
-        if (verifyError.message?.includes('Authentication Failed') || verifyError.message?.includes('535')) {
-          // Check for Office365 SMTP authentication disabled error
-          if (verifyError.message?.includes('SmtpClientAuthentication is disabled')) {
-            errorMsg += '\n\n⚠️ Office365 SMTP Authentication is disabled for your tenant.';
-            errorMsg += '\n\nTo fix this:';
-            errorMsg += '\n1. Go to Microsoft 365 Admin Center → Settings → Org settings → Mail';
-            errorMsg += '\n2. Enable "SMTP AUTH" for your organization or specific mailbox';
-            errorMsg += '\n3. Or use an App Password instead of regular password';
-            errorMsg += '\n4. Or switch to a different email provider (e.g., Hostinger, GoDaddy)';
-            errorMsg += '\n\nSee: https://aka.ms/smtp_auth_disabled';
+        if (sendError.message?.includes('Authentication Failed') || sendError.message?.includes('535')) {
+          const isHostinger = (process.env.SMTP_HOST || '').includes('hostinger.com') || (process.env.SMTP_HOST || '').includes('hpanel.net');
+          
+          if (isHostinger) {
+            errorMsg += '\n\nTroubleshooting tips:';
+            errorMsg += '\n1. ✅ Hostinger requires full email address as SMTP_USER (e.g., support@goodtimesbarandgrill.com)';
+            errorMsg += '\n2. Verify SMTP_HOST is "smtp.hostinger.com" or "smtp.titan.email"';
+            errorMsg += '\n3. For Hostinger, use SMTP_PORT 465 (SSL) or 587 (STARTTLS)';
+            errorMsg += '\n4. Ensure SMTP_PASSWORD is correct (check your Hostinger email account password)';
+            errorMsg += '\n5. Verify SMTP_FROM is set to your email address if different from SMTP_USER';
+            errorMsg += '\n6. Make sure SMTP authentication is enabled in your Hostinger email settings';
           } else {
             errorMsg += '\n\nTroubleshooting tips:';
             errorMsg += '\n1. Check if SMTP_USER should be the full email (e.g., store@zeecrown.in) or just username (store)';
-            errorMsg += '\n2. Verify SMTP_HOST matches your email provider (e.g., mail.zeecrown.in, smtp.zeecrown.in, or your hosting provider\'s SMTP)';
+            errorMsg += '\n2. Verify SMTP_HOST matches your email provider';
             errorMsg += '\n3. Ensure SMTP_PASSWORD is correct (some providers require an app-specific password)';
             errorMsg += '\n4. Try SMTP_PORT 587 (STARTTLS) or 465 (SSL)';
-            if (!process.env.SMTP_HOST) {
-              errorMsg += '\n5. ⚠️ SMTP_HOST is not set - using default GoDaddy server. Set SMTP_HOST for your domain!';
-            }
           }
         }
         
@@ -179,22 +259,10 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
         });
         return { success: false, error: errorMsg };
       }
+      
+      // Re-throw other errors to be handled by outer catch
+      throw sendError;
     }
-
-    const result = await transporter.sendMail({
-      from: `"${fromName}" <${fromEmail}>`,
-      to: options.to,
-      subject: options.subject,
-      html: options.html,
-      text: options.text || options.html.replace(/<[^>]*>/g, ''), // Strip HTML for text version
-      attachments: options.attachments || [],
-    });
-
-    // Only log success for first email or in development
-    if (!connectionVerified || process.env.NODE_ENV === 'development') {
-      console.log(`[Email] ✓ Sent email to ${options.to}: ${options.subject} (MessageID: ${result.messageId})`);
-    }
-    return { success: true };
   } catch (error: any) {
     let errorMessage = 'Failed to send email';
     

@@ -77,7 +77,11 @@ const nextConfig = {
         headers: [
           {
             key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable, stale-while-revalidate=86400'
+            value: 'public, max-age=31536000, s-maxage=31536000, immutable, stale-while-revalidate=31536000, stale-if-error=604800'
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff'
           },
         ],
       },
@@ -87,7 +91,15 @@ const nextConfig = {
         headers: [
           {
             key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable, stale-while-revalidate=86400'
+            value: 'public, max-age=31536000, s-maxage=31536000, immutable, stale-while-revalidate=31536000, stale-if-error=604800'
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff'
+          },
+          {
+            key: 'Vary',
+            value: 'Accept-Encoding'
           },
         ],
       },
@@ -98,6 +110,40 @@ const nextConfig = {
           {
             key: 'Cache-Control',
             value: 'public, max-age=31536000, immutable'
+          },
+        ],
+      },
+      // Cache static images in public folder
+      {
+        source: '/images/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, s-maxage=31536000, immutable, stale-while-revalidate=31536000, stale-if-error=604800'
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff'
+          },
+        ],
+      },
+      // Cache favicon and other root-level images
+      {
+        source: '/favicon.ico',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable, stale-while-revalidate=86400'
+          },
+        ],
+      },
+      // Cache grid pattern SVG
+      {
+        source: '/grid-pattern.svg',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable, stale-while-revalidate=86400'
           },
         ],
       },

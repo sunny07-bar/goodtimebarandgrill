@@ -23,8 +23,30 @@ export function getImageUrl(imagePath: string | null | undefined, bucket?: strin
     return null
   }
 
-  // If it's already a full URL, return it (don't proxy external URLs)
+  // If it's already a full URL, check if it's a Supabase Storage URL
+  // If so, extract bucket and path to use our proxy for proper caching
   if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    
+    // Check if it's a Supabase Storage URL
+    if (supabaseUrl && imagePath.includes('/storage/v1/object/public/')) {
+      // Extract bucket and path from Supabase Storage URL
+      // Format: https://[project].supabase.co/storage/v1/object/public/[bucket]/[path]
+      const storagePathMatch = imagePath.match(/\/storage\/v1\/object\/public\/([^\/]+)\/(.+)$/)
+      if (storagePathMatch) {
+        const extractedBucket = storagePathMatch[1]
+        const extractedPath = storagePathMatch[2]
+        
+        // Use proxy route for proper cache headers
+        if (useProxy) {
+          return `/api/images/${extractedBucket}/${extractedPath}`
+        } else {
+          return imagePath // Return as-is if proxy disabled
+        }
+      }
+    }
+    
+    // For other external URLs, return as-is (don't proxy)
     return imagePath
   }
 

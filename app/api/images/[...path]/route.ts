@@ -7,6 +7,46 @@ import { NextRequest, NextResponse } from 'next/server'
  * Usage: /api/images/[bucket]/[image-path]
  * Example: /api/images/banners/hero-image.webp
  */
+// Support HEAD requests for cache checking without downloading the image
+export async function HEAD(
+  request: NextRequest,
+  { params }: { params: Promise<{ path: string[] }> | { path: string[] } }
+) {
+  const resolvedParams = await Promise.resolve(params)
+  const pathSegments = resolvedParams.path || []
+  
+  if (pathSegments.length < 2) {
+    return new NextResponse(null, { status: 400 })
+  }
+  
+  const bucket = pathSegments[0]
+  const imagePath = pathSegments.slice(1).join('/')
+  const etag = `"${bucket}/${imagePath}"`
+  
+  // Check If-None-Match header
+  const ifNoneMatch = request.headers.get('if-none-match')
+  if (ifNoneMatch === etag) {
+    return new NextResponse(null, {
+      status: 304,
+      headers: {
+        'ETag': etag,
+        'Cache-Control': 'public, max-age=31536000, s-maxage=31536000, immutable, stale-while-revalidate=31536000, stale-if-error=604800',
+      },
+    })
+  }
+  
+  // Return headers only (no body)
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Cache-Control': 'public, max-age=31536000, s-maxage=31536000, immutable, stale-while-revalidate=31536000, stale-if-error=604800',
+      'ETag': etag,
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+    },
+  })
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> | { path: string[] } }
@@ -54,22 +94,48 @@ export async function GET(
       )
     }
 
+    // Check If-None-Match header for cache validation
+    const ifNoneMatch = request.headers.get('if-none-match')
+    const etag = `"${bucket}/${imagePath}"`
+    
+    if (ifNoneMatch === etag) {
+      return new NextResponse(null, {
+        status: 304, // Not Modified
+        headers: {
+          'ETag': etag,
+          'Cache-Control': 'public, max-age=31536000, immutable, stale-while-revalidate=86400',
+        },
+      })
+    }
+    
     // Get image data
     const imageBuffer = await imageResponse.arrayBuffer()
     const contentType = imageResponse.headers.get('content-type') || 'image/jpeg'
     
-    // Create response with proper cache headers
+    // Get Last-Modified from Supabase or use current time
+    const lastModified = imageResponse.headers.get('last-modified') || new Date().toUTCString()
+    
+    // Create response with aggressive cache headers
     const response = new NextResponse(imageBuffer, {
       status: 200,
       headers: {
         'Content-Type': contentType,
-        // Cache for 1 year (31536000 seconds)
-        'Cache-Control': 'public, max-age=31536000, immutable, stale-while-revalidate=86400',
-        // Additional cache headers
-        'ETag': `"${bucket}/${imagePath}"`,
-        // CORS headers if needed
+        // Aggressive caching: 1 year with CDN support
+        'Cache-Control': 'public, max-age=31536000, s-maxage=31536000, immutable, stale-while-revalidate=31536000, stale-if-error=604800',
+        // ETag for cache validation
+        'ETag': etag,
+        // Last-Modified for cache validation
+        'Last-Modified': lastModified,
+        // Expires header (for older browsers)
+        'Expires': new Date(Date.now() + 31536000 * 1000).toUTCString(),
+        // CORS headers
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET',
+        'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+        'Access-Control-Max-Age': '31536000',
+        // Compression hint
+        'Vary': 'Accept-Encoding',
+        // Performance headers
+        'X-Content-Type-Options': 'nosniff',
       },
     })
 
