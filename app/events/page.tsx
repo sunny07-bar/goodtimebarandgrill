@@ -8,8 +8,9 @@ import SupabaseImage from '@/components/SupabaseImage'
 import AnimatedSection from '@/components/AnimatedSection'
 import EventsTimeline from '@/components/EventsTimeline'
 
-// Use ISR: Revalidate every 30 seconds for fresh events while still caching
-export const revalidate = 30
+// Production-ready ISR: Revalidate every 5 minutes (300 seconds) - events update more frequently
+// Cached pages served instantly; background updates keep events fresh
+export const revalidate = 300
 
 export default async function EventsPage() {
   const allEvents = await getEvents()

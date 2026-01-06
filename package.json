@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test:email": "node scripts/test-email.js"
+    "test:email": "node scripts/test-email.js",
+    "test:email:ports": "node scripts/test-email-both-ports.js",
+    "test:hostinger": "node scripts/test-hostinger-config.js",
+    "test:hostinger:465": "node scripts/test-hostinger-port465.js"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.0.5",
@@ -26,7 +29,7 @@
     "date-fns": "^3.3.1",
     "date-fns-tz": "^3.2.0",
     "html2canvas": "^1.4.1",
-    "jspdf": "^3.0.4",
+    "jspdf": "^4.0.0",
     "lucide-react": "^0.344.0",
     "next": "^14.2.5",
     "nodemailer": "^7.0.12",

@@ -4,8 +4,9 @@ import { formatFloridaTime } from '@/lib/utils/timezone'
 import { getActiveOffers } from '@/lib/queries'
 import SupabaseImage from '@/components/SupabaseImage'
 
-// Cache offers page for 2 minutes (offers may change)
-export const revalidate = 120
+// Production-ready ISR: Revalidate every 10 minutes (600 seconds) - offers may change periodically
+// Cached for performance; updates when offers change
+export const revalidate = 600
 
 export default async function OffersPage() {
   const offers = await getActiveOffers()

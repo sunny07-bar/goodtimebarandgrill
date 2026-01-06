@@ -3,10 +3,11 @@ import nodemailer from 'nodemailer';
 // Email service configuration for Hostinger/GoDaddy/Office 365/Custom domains
 function createTransport() {
   const host = process.env.SMTP_HOST || 'smtpout.secureserver.net';
-  const port = parseInt(process.env.SMTP_PORT || '587');
+  // Default to 465 for Hostinger (tested and working), fallback to 587 for other providers
+  const port = parseInt(process.env.SMTP_PORT || (host.includes('hostinger.com') ? '465' : '587'));
   const isOffice365 = host.includes('office365.com') || host.includes('outlook.com');
   const isGmail = host.includes('gmail.com');
-  const isHostinger = host.includes('hostinger.com') || host.includes('hpanel.net');
+  const isHostinger = host.includes('hostinger.com') || host.includes('hpanel.net') || host.includes('titan.email');
   
   // Determine if SMTP_USER is a full email or just username
   const smtpUser = process.env.SMTP_USER || '';
@@ -21,23 +22,45 @@ function createTransport() {
     },
   };
 
-  // Hostinger configuration (matches test script exactly)
+  // Hostinger/Titan Email configuration
   if (isHostinger) {
-    // Hostinger uses port 465 with SSL or port 587 with STARTTLS
-    // Match test script configuration exactly
-    config.secure = port === 465; // true for 465, false for other ports
-    config.tls = {
-      rejectUnauthorized: false,
-      minVersion: 'TLSv1.2',
+    // Trim credentials first (important for authentication)
+    const trimmedUser = smtpUser.trim();
+    const trimmedPassword = smtpPassword.trim();
+    
+    // Update auth with trimmed values
+    config.auth = {
+      user: trimmedUser,
+      pass: trimmedPassword,
     };
-    // Only set requireTLS for port 587 (STARTTLS)
+    
+    // Hostinger uses port 587 with STARTTLS (TLS) or port 465 with SSL
     if (port === 587) {
-      config.requireTLS = true;
+      // Port 587 with STARTTLS (TLS encryption)
+      config.secure = false; // Use STARTTLS for port 587
+      config.requireTLS = true; // Require TLS encryption
+      config.tls = {
+        rejectUnauthorized: false,
+        minVersion: 'TLSv1.2',
+      };
+    } else if (port === 465) {
+      // Port 465 with SSL - EXACT match to working test script
+      config.secure = true; // Use SSL for port 465
+      config.tls = {
+        rejectUnauthorized: false,
+        minVersion: 'TLSv1', // Must be TLSv1 for port 465
+      };
+      // Ensure requireTLS is NOT set for port 465
+      config.requireTLS = false;
     }
-    // Don't set requireTLS for port 465 (SSL) - it's not needed and can cause issues
-    // Hostinger requires full email as username
-    if (smtpUser && !smtpUser.includes('@')) {
-      console.warn('[Email] Hostinger typically requires full email address as SMTP_USER');
+    // Add connection timeouts (increased for slower SMTP servers)
+    config.connectionTimeout = 30000; // 30 seconds
+    config.greetingTimeout = 30000; // 30 seconds
+    config.socketTimeout = 30000; // 30 seconds
+    
+    // Hostinger/Titan requires full email as username
+    if (trimmedUser && !trimmedUser.includes('@')) {
+      console.warn('[Email] Hostinger/Titan Email typically requires full email address as SMTP_USER');
     }
   } else if (isOffice365) {
     // Office 365 configuration
@@ -73,8 +96,13 @@ function createTransport() {
   }
 
   console.log(`[Email] Creating transporter: ${host}:${port} (Hostinger: ${isHostinger}, Office365: ${isOffice365}, Gmail: ${isGmail})`);
-  console.log(`[Email] Auth user: ${smtpUser.includes('@') ? smtpUser : smtpUser + ' (username only)'}`);
-  console.log(`[Email] Security: secure=${config.secure}, requireTLS=${config.requireTLS}`);
+  console.log(`[Email] Auth user: "${config.auth.user}" (length: ${config.auth.user.length})${config.auth.user.includes('@') ? '' : ' ⚠️ WARNING: Username does not contain @'}`);
+  console.log(`[Email] Auth password length: ${config.auth.pass.length} characters`);
+  console.log(`[Email] Security: secure=${config.secure}, requireTLS=${config.requireTLS || false}`);
+  if (isHostinger && port === 465) {
+    console.log(`[Email] Port 465 SSL config: secure=${config.secure}, minVersion=${config.tls?.minVersion || 'not set'}, requireTLS=${config.requireTLS || false}`);
+    console.log(`[Email] ✅ Configuration matches working test script`);
+  }
   return nodemailer.createTransport(config);
 }
 
@@ -89,7 +117,7 @@ function getConfigHash(): string {
 
 function isHostingerProvider(): boolean {
   const host = process.env.SMTP_HOST || '';
-  return host.includes('hostinger.com') || host.includes('hpanel.net');
+  return host.includes('hostinger.com') || host.includes('hpanel.net') || host.includes('titan.email');
 }
 
 // Create transporter with caching (only recreate if config changes)
@@ -136,18 +164,46 @@ export interface EmailOptions {
 
 export async function sendEmail(options: EmailOptions): Promise<{ success: boolean; error?: string }> {
   try {
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
+    // Get raw environment variables (before trimming)
+    const rawSmtpUser = process.env.SMTP_USER;
+    const rawSmtpPassword = process.env.SMTP_PASSWORD;
+    
+    if (!rawSmtpUser || !rawSmtpPassword) {
       const errorMsg = 'SMTP credentials not configured. Please set SMTP_USER and SMTP_PASSWORD in .env.local';
       console.error('[Email]', errorMsg);
       return { success: false, error: errorMsg };
     }
 
     const smtpHost = process.env.SMTP_HOST || 'smtpout.secureserver.net';
-    const smtpPort = process.env.SMTP_PORT || '587';
-    const smtpUser = process.env.SMTP_USER;
+    // Default to port 465 for Hostinger (tested and working), otherwise 587
+    const defaultPort = (smtpHost.includes('hostinger.com') || smtpHost.includes('hpanel.net') || smtpHost.includes('titan.email')) ? '465' : '587';
+    const smtpPort = process.env.SMTP_PORT || defaultPort;
+    
+    // Trim credentials (important for Hostinger)
+    const smtpUser = rawSmtpUser.trim();
+    const smtpPassword = rawSmtpPassword.trim();
+    
+    // Debug: Check for common issues
+    if (smtpUser !== rawSmtpUser || smtpPassword !== rawSmtpPassword) {
+      console.log('[Email] ⚠️ Credentials had whitespace - trimmed');
+    }
     
     // Determine from email - prefer SMTP_FROM, fallback to SMTP_USER (might be full email)
     let fromEmail = options.from || process.env.SMTP_FROM;
+    
+    // Clean up malformed SMTP_FROM (handle format like 'Name" <email>' or '"email"')
+    if (fromEmail) {
+      // Extract email from format "Name" <email@domain.com>
+      if (fromEmail.includes('<') && fromEmail.includes('>')) {
+        const emailMatch = fromEmail.match(/<([^>]+)>/);
+        if (emailMatch) {
+          fromEmail = emailMatch[1]; // Extract just the email
+        }
+      }
+      // Remove any remaining quotes
+      fromEmail = fromEmail.replace(/^["']|["']$/g, '').trim();
+    }
+    
     if (!fromEmail) {
       // If SMTP_USER is a full email, use it; otherwise construct from domain
       if (smtpUser.includes('@')) {
@@ -230,7 +286,7 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
         
         // Provide helpful guidance based on error
         if (sendError.message?.includes('Authentication Failed') || sendError.message?.includes('535')) {
-          const isHostinger = (process.env.SMTP_HOST || '').includes('hostinger.com') || (process.env.SMTP_HOST || '').includes('hpanel.net');
+            const isHostinger = (process.env.SMTP_HOST || '').includes('hostinger.com') || (process.env.SMTP_HOST || '').includes('hpanel.net') || (process.env.SMTP_HOST || '').includes('titan.email');
           
           if (isHostinger) {
             errorMsg += '\n\nTroubleshooting tips:';

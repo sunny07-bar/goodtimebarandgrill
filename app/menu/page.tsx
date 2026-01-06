@@ -1,8 +1,9 @@
 import { getMenuCategories, getMenuItems } from '@/lib/queries'
 import MenuClient from '@/components/MenuClient'
 
-// Cache menu for 5 minutes (menu items don't change frequently)
-export const revalidate = 300
+// Production-ready ISR: Revalidate every 30 minutes (1800 seconds) - menu rarely changes
+// Pages cached for fast loading; updates only when menu changes
+export const revalidate = 1800
 
 export default async function MenuPage() {
   const categories = await getMenuCategories()

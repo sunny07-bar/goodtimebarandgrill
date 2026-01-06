@@ -5,8 +5,9 @@ import SupabaseImage from '@/components/SupabaseImage'
 import Link from 'next/link'
 import AnimatedSection from '@/components/AnimatedSection'
 
-// Cache menu item detail for 5 minutes
-export const revalidate = 300
+// Production-ready ISR: Revalidate every 30 minutes (1800 seconds) - menu items rarely change
+// Cached for instant loading; updates when item changes
+export const revalidate = 1800
 
 export default async function MenuItemDetailPage({ params }: { params: { id: string } }) {
   const item = await getMenuItemById(params.id)

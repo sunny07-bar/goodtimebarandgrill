@@ -2,12 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { UtensilsCrossed, Music, Beer, ChefHat, Calendar, MapPin, Clock, ArrowRight, Leaf, Mail, Phone, ChevronLeft, ChevronRight } from 'lucide-react'
 import SupabaseImage from '@/components/SupabaseImage'
 import { formatFloridaTime, convert24To12, formatFloridaDateDDMMYYYY } from '@/lib/utils/timezone'
 import { getAllSiteSettings, getOpeningHours } from '@/lib/queries'
-import { supabase } from '@/lib/db'
-import { getImageUrl } from '@/lib/image-utils'
 
 interface HomeClientProps {
   banners: any[]
@@ -27,7 +26,8 @@ export default function HomeClient({ banners, featuredItems, upcomingEvents, gal
     phone: '',
     email: ''
   })
-  const [logoUrl, setLogoUrl] = useState<string | null>(null)
+  // Use static logo from public folder - always available, cached
+  const logoUrl = '/images/good-times-logo.png'
 
   // Limit events to 2 featured
   const featuredEvents = upcomingEvents.slice(0, 2)
@@ -50,29 +50,7 @@ export default function HomeClient({ banners, featuredItems, upcomingEvents, gal
           email: settings.restaurant_email || settings.email || ''
         })
 
-        // Fetch logo
-        if (supabase) {
-          try {
-            const { data: logoSettings } = await supabase
-              .from('site_settings')
-              .select('value')
-              .eq('key', 'logo_path')
-              .single()
-
-            if (logoSettings?.value) {
-              const logoPath = typeof logoSettings.value === 'string' 
-                ? logoSettings.value.replace(/^"|"$/g, '')
-                : logoSettings.value
-              
-              if (logoPath) {
-                const logoUrl = getImageUrl(logoPath, 'site-assets')
-                setLogoUrl(logoUrl ? `${logoUrl}?t=${Date.now()}` : null)
-              }
-            }
-          } catch (error) {
-            console.error('Error fetching logo:', error)
-          }
-        }
+        // Logo is already fetched server-side and passed as prop (no client-side fetching needed)
       } catch (error) {
         console.error('Error fetching data:', error)
       }
@@ -132,17 +110,21 @@ export default function HomeClient({ banners, featuredItems, upcomingEvents, gal
       {validBanners.length > 0 && currentBanner ? (
         <section className="relative w-full px-3 sm:px-4 md:px-6 lg:px-8 animate-fade-in mb-0">
           <div className="relative w-full aspect-[16/10] md:h-[60vh] md:max-h-[600px] md:min-h-[400px] rounded-2xl sm:rounded-3xl md:rounded-3xl overflow-hidden group">
-            {/* Logo in left upper corner */}
-            {logoUrl && (
-              <div className="absolute top-2 left-2 sm:top-3 sm:left-3 md:top-4 md:left-4 lg:top-6 lg:left-6 z-30">
-                <img 
-                  src={logoUrl} 
-                  alt="Logo" 
-                  className="h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 lg:h-32 lg:w-32 xl:h-40 xl:w-40 object-contain drop-shadow-lg"
-                  style={{ background: 'transparent' }}
-                />
-              </div>
-            )}
+            {/* Logo in top-left corner - Always visible */}
+            <div className="absolute top-3 left-3 sm:top-4 sm:left-4 md:top-5 md:left-5 z-30">
+              <Image 
+                src={logoUrl}
+                alt="Good Times Bar & Grill Logo"
+                width={100}
+                height={100}
+                className="h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 lg:h-28 lg:w-28 object-contain drop-shadow-lg"
+                style={{ background: 'transparent' }}
+                priority
+                unoptimized={true}
+                // Static logo from /public/images/good-times-logo.png
+                // Always available, cached via Cache-Control headers (1 year cache)
+              />
+            </div>
 
             {/* Banner Images */}
             <div className="absolute inset-0">

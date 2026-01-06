@@ -1044,3 +1044,38 @@ export async function getAllSiteSettings() {
   }
 }
 
+// Get logo URL (server-side)
+export async function getLogoUrl(): Promise<string | null> {
+  try {
+    if (!supabase) {
+      console.error('Supabase client not available')
+      return null
+    }
+
+    const { data, error } = await supabase
+      .from('site_settings')
+      .select('value')
+      .eq('key', 'logo_path')
+      .single()
+
+    if (error || !data?.value) {
+      return null
+    }
+
+    let logoPath = typeof data.value === 'string' 
+      ? data.value.replace(/^"|"$/g, '')
+      : data.value
+
+    if (!logoPath) {
+      return null
+    }
+
+    // Import getImageUrl dynamically to avoid client-side code in server component
+    const { getImageUrl } = await import('@/lib/image-utils')
+    return getImageUrl(logoPath, 'site-assets', true)
+  } catch (error) {
+    console.error('Error in getLogoUrl:', error)
+    return null
+  }
+}
+

@@ -40,8 +40,10 @@ serve(async (req) => {
     const normalizedEmail = email.toLowerCase().trim();
 
     // Get SMTP configuration from environment
-    const smtpHost = Deno.env.get("SMTP_HOST");
-    const smtpPort = parseInt(Deno.env.get("SMTP_PORT") || "587");
+    const smtpHost = Deno.env.get("SMTP_HOST") || "smtp.hostinger.com";
+    // Default to port 465 for Hostinger (tested and working)
+    const defaultPort = smtpHost.includes("hostinger.com") ? "465" : "587";
+    const smtpPort = parseInt(Deno.env.get("SMTP_PORT") || defaultPort);
     const smtpUser = Deno.env.get("SMTP_USER");
     const smtpPassword = Deno.env.get("SMTP_PASSWORD");
     const smtpFrom = Deno.env.get("SMTP_FROM") || smtpUser || "";

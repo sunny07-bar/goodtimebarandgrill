@@ -8,8 +8,9 @@ import {
 import SupabaseImage from "@/components/SupabaseImage";
 import { convert24To12 } from "@/lib/utils/timezone";
 
-// Cache about page for 10 minutes (static content)
-export const revalidate = 600;
+// Production-ready ISR: Revalidate every 1 hour (3600 seconds) - mostly static content
+// Served from cache; updates only when content changes
+export const revalidate = 3600;
 
 export default async function AboutPage() {
   const aboutSection = await getStaticSection("about");

@@ -50,7 +50,7 @@ serve(async (req) => {
     }
 
     // Detect email provider for proper configuration
-    const isHostinger = smtpHost.includes('hostinger.com') || smtpHost.includes('hpanel.net');
+    const isHostinger = smtpHost.includes('hostinger.com') || smtpHost.includes('hpanel.net') || smtpHost.includes('titan.email');
     const isOffice365 = smtpHost.includes('office365.com') || smtpHost.includes('outlook.com');
     const isGmail = smtpHost.includes('gmail.com');
 
@@ -67,17 +67,28 @@ serve(async (req) => {
       },
     };
 
-    // Hostinger configuration
+    // Hostinger/Titan Email configuration
     if (isHostinger) {
-      // Hostinger uses port 465 with SSL or port 587 with STARTTLS
-      if (smtpPort === 465) {
+      // Hostinger uses port 587 with STARTTLS (TLS) - recommended setting
+      // Alternative: port 465 with SSL
+      if (smtpPort === 587) {
+        // Port 587 with STARTTLS (TLS encryption) - Hostinger's recommended setting
+        transporterConfig.secure = false; // Use STARTTLS for port 587
+        transporterConfig.requireTLS = true; // Require TLS encryption
+        transporterConfig.tls.minVersion = 'TLSv1.2';
+      } else if (smtpPort === 465) {
+        // Port 465 with SSL (alternative)
         transporterConfig.secure = true; // Use SSL
         transporterConfig.requireTLS = false;
-      } else if (smtpPort === 587) {
-        transporterConfig.secure = false; // Use STARTTLS
-        transporterConfig.requireTLS = true;
+        transporterConfig.tls.minVersion = 'TLSv1'; // Some servers need TLSv1
       }
-      transporterConfig.tls.minVersion = 'TLSv1.2';
+      // Trim credentials (remove whitespace)
+      transporterConfig.auth.user = smtpUser.trim();
+      transporterConfig.auth.pass = smtpPassword.trim();
+      // Add connection timeouts (increased for slower SMTP servers)
+      transporterConfig.connectionTimeout = 30000; // 30 seconds
+      transporterConfig.greetingTimeout = 30000; // 30 seconds
+      transporterConfig.socketTimeout = 30000; // 30 seconds
     } else if (isOffice365) {
       // Office 365 configuration
       if (smtpPort === 587) {

@@ -13,34 +13,11 @@ interface MenuClientProps {
 export default function MenuClient({ categories, items }: MenuClientProps) {
   // Toggle between 'food' and 'drink'
   const [selectedType, setSelectedType] = useState<'food' | 'drink'>('food')
-  const [showTransition, setShowTransition] = useState(false)
-  const [transitionType, setTransitionType] = useState<'food' | 'drink'>('food')
-  const [hasMounted, setHasMounted] = useState(false)
   
-  // Show transition on initial mount
-  useEffect(() => {
-    setTransitionType('food')
-    setShowTransition(true)
-    setTimeout(() => {
-      setShowTransition(false)
-      setHasMounted(true)
-    }, 910) // 700 * 1.3
-  }, [])
-  
-  // Handle tab change with transition
+  // Handle tab change (no animation)
   const handleTabChange = (type: 'food' | 'drink') => {
     if (selectedType === type) return
-    
-    setTransitionType(type)
-    setShowTransition(true)
-    
-    setTimeout(() => {
-      setSelectedType(type)
-    }, 455) // halfway point (350 * 1.3)
-    
-    setTimeout(() => {
-      setShowTransition(false)
-    }, 910) // animation ends (700 * 1.3)
+    setSelectedType(type)
   }
   
   // Filter categories by type (default to 'food' if category_type is null for backward compatibility)
@@ -64,13 +41,13 @@ export default function MenuClient({ categories, items }: MenuClientProps) {
     }
   }, [selectedType, filteredCategories, selectedCategoryId])
 
-  // Auto-scroll active category into view
+  // Auto-scroll active category into view (instant, no animation)
   useEffect(() => {
     if (selectedCategoryId && categoryScrollRef.current) {
       const activeButton = categoryScrollRef.current.querySelector(`[data-category-id="${selectedCategoryId}"]`) as HTMLElement
       if (activeButton) {
         activeButton.scrollIntoView({
-          behavior: 'smooth',
+          behavior: 'auto', // Instant scroll, no animation
           inline: 'center',
           block: 'nearest'
         })
@@ -133,11 +110,6 @@ export default function MenuClient({ categories, items }: MenuClientProps) {
     <div className="section-spacing relative" style={{
       background: 'radial-gradient(60% 40% at 50% 0%, rgba(245,158,11,0.08), transparent 60%), linear-gradient(180deg, #0b0b0b, #050505)'
     }}>
-      {/* Transition Overlay */}
-      {showTransition && (
-        <MenuTransitionOverlay type={transitionType} />
-      )}
-      
       <div className="container-global relative z-10" style={{
         paddingLeft: 'max(16px, env(safe-area-inset-left, 16px))',
         paddingRight: 'max(16px, env(safe-area-inset-right, 16px))'
@@ -159,24 +131,24 @@ export default function MenuClient({ categories, items }: MenuClientProps) {
         <div className="inline-flex bg-[#111111] border-2 border-white/10 rounded-2xl p-2 gap-2 shadow-2xl">
           <button
             onClick={() => handleTabChange('food')}
-            className={`flex items-center gap-3 px-8 md:px-10 py-4 md:py-5 rounded-xl font-semibold transition-all duration-300 min-h-[52px] relative overflow-hidden ${
+            className={`flex items-center gap-3 px-8 md:px-10 py-4 md:py-5 rounded-xl font-semibold min-h-[52px] relative overflow-hidden ${
               selectedType === 'food'
                 ? 'bg-gradient-to-r from-[#fbbf24] to-[#f59e0b] text-black shadow-lg shadow-[#F59E0B]/35 scale-105'
                 : 'text-[#D1D5DB] hover:text-[#F59E0B]'
             }`}
           >
-            <ChefHat className={`h-5 w-5 md:h-6 md:w-6 transition-all duration-300 ${selectedType === 'food' ? 'scale-110' : ''}`} />
+            <ChefHat className={`h-5 w-5 md:h-6 md:w-6 ${selectedType === 'food' ? 'scale-110' : ''}`} />
             <span className="text-base md:text-lg">Food</span>
           </button>
           <button
             onClick={() => handleTabChange('drink')}
-            className={`flex items-center gap-3 px-8 md:px-10 py-4 md:py-5 rounded-xl font-semibold transition-all duration-300 min-h-[52px] relative overflow-hidden ${
+            className={`flex items-center gap-3 px-8 md:px-10 py-4 md:py-5 rounded-xl font-semibold min-h-[52px] relative overflow-hidden ${
               selectedType === 'drink'
                 ? 'bg-gradient-to-r from-[#fbbf24] to-[#f59e0b] text-black shadow-lg shadow-[#F59E0B]/35 scale-105'
                 : 'text-[#D1D5DB] hover:text-[#F59E0B]'
             }`}
           >
-            <Wine className={`h-5 w-5 md:h-6 md:w-6 transition-all duration-300 ${selectedType === 'drink' ? 'scale-110' : ''}`} />
+            <Wine className={`h-5 w-5 md:h-6 md:w-6 ${selectedType === 'drink' ? 'scale-110' : ''}`} />
             <span className="text-base md:text-lg">Drinks</span>
           </button>
         </div>
@@ -205,7 +177,7 @@ export default function MenuClient({ categories, items }: MenuClientProps) {
                 key={category.id}
                 data-category-id={category.id}
                 onClick={() => setSelectedCategoryId(category.id)}
-                className={`relative whitespace-nowrap text-sm md:text-base px-6 md:px-8 py-3 md:py-4 rounded-xl font-semibold transition-all duration-300 min-h-[44px] flex-shrink-0 ${
+                className={`relative whitespace-nowrap text-sm md:text-base px-6 md:px-8 py-3 md:py-4 rounded-xl font-semibold min-h-[44px] flex-shrink-0 ${
                   selectedCategoryId === category.id
                     ? 'bg-gradient-to-r from-[#fbbf24] to-[#f59e0b] text-black shadow-[0_8px_30px_rgba(245,158,11,0.35)] scale-110'
                     : 'bg-[#111111] border-2 border-white/10 text-[#D1D5DB] hover:bg-[#F59E0B]/10 hover:border-[#F59E0B]/40 hover:text-[#F59E0B] hover:scale-105'
@@ -259,7 +231,7 @@ export default function MenuClient({ categories, items }: MenuClientProps) {
 
       {/* Selected Category Info */}
       {selectedCategory && (
-        <div className="mb-10 md:mb-12 pb-6 border-b border-white/10 animate-fade-in">
+        <div className="mb-10 md:mb-12 pb-6 border-b border-white/10">
           <h2 className="text-2xl md:text-3xl font-bold mb-3 text-gradient-amber" style={{
             fontFamily: "'Playfair Display', serif",
             letterSpacing: '0.5px',
@@ -283,8 +255,7 @@ export default function MenuClient({ categories, items }: MenuClientProps) {
               <Link 
                 key={item.id}
                 href={`/menu/${item.id}`}
-                className="menu-item-card-premium animate-fade-in-up group rounded-lg md:rounded-xl relative bg-[#111111] border border-white/10 overflow-hidden transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_15px_40px_rgba(0,0,0,0.5)] hover:border-[#F59E0B]/60 flex flex-col justify-end min-h-[180px] sm:min-h-[200px] md:min-h-[220px] block cursor-pointer" 
-                style={{ animationDelay: `${index * 0.05}s` }}
+                className="menu-item-card-premium group rounded-lg md:rounded-xl relative bg-[#111111] border border-white/10 overflow-hidden transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_15px_40px_rgba(0,0,0,0.5)] hover:border-[#F59E0B]/60 flex flex-col justify-end min-h-[180px] sm:min-h-[200px] md:min-h-[220px] block cursor-pointer"
               >
                 {/* Top gradient overlay to remove dead space */}
                 <div className="absolute inset-0 pointer-events-none" style={{
@@ -387,160 +358,6 @@ export default function MenuClient({ categories, items }: MenuClientProps) {
           </div>
         </div>
       )}
-      </div>
-    </div>
-  )
-}
-
-// Menu Transition Overlay Component
-function MenuTransitionOverlay({ type }: { type: 'food' | 'drink' }) {
-  return (
-    <div className="fixed inset-0 bg-[#0E0E0E] z-[9999] flex items-center justify-center">
-      <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes collideLeft {
-          0% {
-            transform: translateX(-250px) translateY(-50%);
-            opacity: 0;
-          }
-          70% {
-            transform: translateX(40px) translateY(-50%);
-            opacity: 1;
-          }
-          85% {
-            transform: translateX(20px) translateY(-50%);
-          }
-          100% {
-            transform: translateX(40px) translateY(-50%);
-            opacity: 1;
-          }
-        }
-        @keyframes collideRight {
-          0% {
-            transform: translateX(250px) translateY(-50%) scaleX(-1);
-            opacity: 0;
-          }
-          70% {
-            transform: translateX(-40px) translateY(-50%) scaleX(-1);
-            opacity: 1;
-          }
-          85% {
-            transform: translateX(-20px) translateY(-50%) scaleX(-1);
-          }
-          100% {
-            transform: translateX(-40px) translateY(-50%) scaleX(-1);
-            opacity: 1;
-          }
-        }
-        @keyframes clinkLeft {
-          0% {
-            transform: translateX(-250px) translateY(-50%) rotate(-15deg);
-            opacity: 0;
-          }
-          70% {
-            transform: translateX(40px) translateY(-50%) rotate(-10deg);
-            opacity: 1;
-          }
-          85% {
-            transform: translateX(25px) translateY(-50%) rotate(-8deg);
-          }
-          100% {
-            transform: translateX(40px) translateY(-50%) rotate(-5deg);
-            opacity: 1;
-          }
-        }
-        @keyframes clinkRight {
-          0% {
-            transform: translateX(250px) translateY(-50%) rotate(15deg) scaleX(-1);
-            opacity: 0;
-          }
-          70% {
-            transform: translateX(-40px) translateY(-50%) rotate(10deg) scaleX(-1);
-            opacity: 1;
-          }
-          85% {
-            transform: translateX(-25px) translateY(-50%) rotate(8deg) scaleX(-1);
-          }
-          100% {
-            transform: translateX(-40px) translateY(-50%) rotate(5deg) scaleX(-1);
-            opacity: 1;
-          }
-        }
-        @keyframes fadeOut {
-          0% { opacity: 1; }
-          100% { opacity: 0; }
-        }
-        .menu-collision-container {
-          position: relative;
-          width: 400px;
-          height: 400px;
-          animation: fadeOut 0.15s ease 0.715s forwards;
-        }
-        @media (min-width: 768px) {
-          .menu-collision-container {
-            width: 600px;
-            height: 600px;
-          }
-        }
-        .menu-collision-item {
-          position: absolute;
-          width: 180px;
-          height: auto;
-          top: 50%;
-        }
-        @media (min-width: 768px) {
-          .menu-collision-item {
-            width: 250px;
-          }
-        }
-        .menu-collision-item.left {
-          left: 50%;
-          transform: translateX(-50%) translateY(-50%);
-          animation: collideLeft 0.78s ease forwards;
-        }
-        .menu-collision-item.right {
-          right: 50%;
-          transform: translateX(50%) translateY(-50%) scaleX(-1);
-          animation: collideRight 0.78s ease forwards;
-        }
-        .menu-collision-item.glass.left {
-          left: 50%;
-          transform: translateX(-50%) translateY(-50%);
-          animation: clinkLeft 0.78s ease forwards;
-        }
-        .menu-collision-item.glass.right {
-          right: 50%;
-          transform: translateX(50%) translateY(-50%) scaleX(-1);
-          animation: clinkRight 0.78s ease forwards;
-        }
-      ` }} />
-      <div className="menu-collision-container">
-        {type === 'food' ? (
-          <>
-            <img 
-              src="/images/leg.png" 
-              alt="Chicken leg" 
-              className="menu-collision-item left"
-            />
-            <img 
-              src="/images/leg.png" 
-              alt="Chicken leg" 
-              className="menu-collision-item right"
-            />
-          </>
-        ) : (
-          <>
-            <img 
-              src="/images/drink.png" 
-              alt="Drink glass" 
-              className="menu-collision-item glass left"
-            />
-            <img 
-              src="/images/drink.png" 
-              alt="Drink glass" 
-              className="menu-collision-item glass right"
-            />
-          </>
-        )}
       </div>
     </div>
   )
