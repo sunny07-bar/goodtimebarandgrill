@@ -2,28 +2,31 @@ import { useState, useEffect } from 'react'
 import { MapPin, Phone, Mail, Instagram, Facebook } from 'lucide-react'
 
 // Helper to extract username/url
-const extractUsername = (value: string): { username: string; url: string } => {
+const extractUsername = (value: string, platform: 'instagram' | 'facebook' | 'tiktok' = 'instagram'): { username: string; url: string } => {
   const trimmed = value?.toString().trim() || ''
   if (!trimmed) return { username: '', url: '' }
 
-  // Remove @ if present
+  // Remove @ if present for username extraction
   let cleaned = trimmed.replace(/^@/, '')
 
-  // Extract username from URL
-  const instagramMatch = cleaned.match(/(?:instagram\.com\/|^)([^\/\?]+)/i)
-  const facebookMatch = cleaned.match(/(?:facebook\.com\/|^)([^\/\?]+)/i)
+  // 1. Check for explicit URLs first
+  const instagramMatch = cleaned.match(/instagram\.com\/([^\/\?]+)/i)
+  const facebookMatch = cleaned.match(/facebook\.com\/([^\/\?]+)/i)
+  const tiktokMatch = cleaned.match(/tiktok\.com\/@?([^\/\?]+)/i)
 
-  if (instagramMatch && instagramMatch[1]) {
-    const username = instagramMatch[1]
-    return { username, url: `https://instagram.com/${username}` }
-  }
-  if (facebookMatch && facebookMatch[1]) {
-    const username = facebookMatch[1]
-    return { username, url: `https://facebook.com/${username}` }
+  if (instagramMatch && instagramMatch[1]) return { username: instagramMatch[1], url: `https://instagram.com/${instagramMatch[1]}` }
+  if (facebookMatch && facebookMatch[1]) return { username: facebookMatch[1], url: `https://facebook.com/${facebookMatch[1]}` }
+  if (tiktokMatch && tiktokMatch[1]) return { username: tiktokMatch[1], url: `https://tiktok.com/@${tiktokMatch[1]}` }
+
+  // 2. If no explicit URL, assume it's a username for the requested platform
+  if (!trimmed.includes('http') && !trimmed.includes('.com')) {
+    if (platform === 'instagram') return { username: cleaned, url: `https://instagram.com/${cleaned}` }
+    if (platform === 'facebook') return { username: cleaned, url: `https://facebook.com/${cleaned}` }
+    if (platform === 'tiktok') return { username: cleaned, url: `https://tiktok.com/@${cleaned}` }
   }
 
-  // If no URL pattern, assume it's just a username
-  return { username: cleaned, url: cleaned.startsWith('http') ? cleaned : '' }
+  // 3. Fallback for generic URLs
+  return { username: cleaned, url: trimmed.startsWith('http') ? trimmed : '' }
 }
 
 interface FooterProps {
@@ -31,8 +34,9 @@ interface FooterProps {
 }
 
 export default function Footer({ siteSettings = {} }: FooterProps) {
-  const instagramData = extractUsername(siteSettings.instagram_user_id || '')
-  const facebookData = extractUsername(siteSettings.facebook_user_id || '')
+  const instagramData = extractUsername(siteSettings.instagram_user_id || '', 'instagram')
+  const facebookData = extractUsername(siteSettings.facebook_user_id || '', 'facebook')
+  const tiktokData = extractUsername(siteSettings.tiktok_user_id || '', 'tiktok')
 
   const siteInfo = {
     restaurant_name: siteSettings.restaurant_name || '',
@@ -42,7 +46,9 @@ export default function Footer({ siteSettings = {} }: FooterProps) {
     instagram_user_id: instagramData.username,
     instagram_url: instagramData.url,
     facebook_user_id: facebookData.username,
-    facebook_url: facebookData.url
+    facebook_url: facebookData.url,
+    tiktok_user_id: tiktokData.username,
+    tiktok_url: tiktokData.url
   }
 
   return (
@@ -104,6 +110,28 @@ export default function Footer({ siteSettings = {} }: FooterProps) {
                 >
                   <Facebook className="h-4 w-4 text-[#F59E0B] flex-shrink-0" />
                   <span>{siteInfo.facebook_user_id}</span>
+                </a>
+              )}
+              {siteInfo.tiktok_user_id && (
+                <a
+                  href={siteInfo.tiktok_url || `https://tiktok.com/@${siteInfo.tiktok_user_id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-sm text-[#D1D5DB] hover:text-[#F59E0B] transition-colors"
+                  aria-label="TikTok"
+                >
+                  <svg
+                    className="h-4 w-4 text-[#F59E0B] flex-shrink-0"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" />
+                  </svg>
+                  <span>@{siteInfo.tiktok_user_id}</span>
                 </a>
               )}
             </div>

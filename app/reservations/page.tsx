@@ -23,7 +23,7 @@ function ReservationsPageContent() {
     guestsCount: 2,
     reservationDate: '',
     reservationTime: '',
-    area: '',
+    area: 'Restaurant',
     notes: '',
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -47,7 +47,7 @@ function ReservationsPageContent() {
   useEffect(() => {
     const eventDate = searchParams.get('eventDate')
     const eventTime = searchParams.get('eventTime')
-    
+
     if (eventDate && eventTime) {
       // Convert 24-hour time to HH:mm format if needed
       let timeValue = eventTime
@@ -55,7 +55,7 @@ function ReservationsPageContent() {
         const [hours, minutes] = timeValue.split(':')
         timeValue = `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}`
       }
-      
+
       setFormData(prev => ({
         ...prev,
         reservationDate: eventDate,
@@ -71,7 +71,7 @@ function ReservationsPageContent() {
         const settings = await getAllSiteSettings()
         setContactPhone(settings.restaurant_phone || settings.phone || '')
       } catch (error) {
-        console.error('Error fetching contact info:', error)
+        // Silent fail for non-critical contact info
       }
     }
     fetchContactInfo()
@@ -129,34 +129,28 @@ function ReservationsPageContent() {
 
     setLoadingSlots(true)
     setAvailabilityError(null)
-    
+
     try {
-      console.log('[ReservationsPage] Loading hours for date:', formData.reservationDate)
-      
       // Check for events on this date - only show custom ticket events (own ticket events) to users
       // Events with action_button_type === 'reservation' or 'external_tickets' are not shown
       const events = await getEventsForDate(formData.reservationDate)
       const customTicketEvents = filterCustomTicketEvents(events)
       setEventsOnDate(customTicketEvents)
-      console.log('[ReservationsPage] Events found:', events.length, 'Custom ticket events:', customTicketEvents.length)
-      
+
       // Always get regular hours for the date (needed for slot generation)
       const openingHours = await getOpeningHours()
       // Use Florida timezone to determine day of week
       const dayOfWeek = getDayOfWeekInFlorida(formData.reservationDate)
       const hours = openingHours.find(h => h.weekday === dayOfWeek)
-      console.log('[ReservationsPage] Regular hours for weekday', dayOfWeek, ':', hours)
       setRegularHours(hours)
-      
+
       // Check for special hours
       const specialHours = await getSpecialHoursForDate(formData.reservationDate)
-      console.log('[ReservationsPage] Special hours:', specialHours)
-      
+
       if (specialHours) {
         // Special hours exist for this date
         setSpecialHoursInfo(specialHours)
-        console.log('[ReservationsPage] Special hours is_open:', specialHours.is_open)
-        
+
         // Load custom fields if special hours exist
         if (specialHours.special_hours_fields && specialHours.special_hours_fields.length > 0) {
           const fields: Record<string, string> = {}
@@ -174,13 +168,11 @@ function ReservationsPageContent() {
 
       // Get available time slots
       const slots = await getAvailableTimeSlots(formData.reservationDate, formData.guestsCount)
-      console.log('[ReservationsPage] Available slots count:', slots.length)
-      console.log('[ReservationsPage] First 5 slots:', slots.slice(0, 5))
-      
+
       // Filter out past time slots if the selected date is today (using Florida timezone)
       const { getFloridaNow, toFloridaTime, FLORIDA_TIMEZONE } = require('@/lib/utils/timezone')
       const { fromZonedTime } = require('date-fns-tz')
-      const filteredSlots = slots.filter(slot => {
+      const filteredSlots = slots.filter((slot: string) => {
         if (formData.reservationDate === today) {
           // If today, filter out past times using Florida timezone
           const floridaNow = getFloridaNow()
@@ -190,27 +182,15 @@ function ReservationsPageContent() {
           const slotTimeLocal = new Date(year, month - 1, day, hour, minute, 0)
           const slotTimeUTC = fromZonedTime(slotTimeLocal, FLORIDA_TIMEZONE)
           const slotTimeFlorida = toFloridaTime(slotTimeUTC)
-          
+
           // Compare times (both in Florida timezone)
           return slotTimeFlorida >= floridaNow
         }
         // For future dates, all slots are valid
         return true
       })
-      
+
       setAvailableSlots(filteredSlots)
-      
-      // Debug: Log what we have
-      if (specialHours) {
-        console.log('[ReservationsPage] Special hours details:', {
-          title: specialHours.title,
-          is_open: specialHours.is_open,
-          time_from: specialHours.time_from,
-          time_to: specialHours.time_to,
-          has_seatings: !!specialHours.special_hours_seatings?.[0],
-          seatings_interval: specialHours.special_hours_seatings?.[0]?.interval_minutes
-        })
-      }
 
       // If a time was selected, check if it's still available
       if (formData.reservationTime && !slots.includes(formData.reservationTime)) {
@@ -230,7 +210,7 @@ function ReservationsPageContent() {
     if (!formData.reservationTime || !formData.customerEmail || !formData.reservationDate) {
       return false
     }
-    
+
     // Check if there's an event with reservation_price for this date/time
     const hasEventReservationPrice = eventsOnDate.some(event => {
       if (event.reservation_price && event.reservation_price > 0) {
@@ -239,15 +219,15 @@ function ReservationsPageContent() {
         const eventStartFlorida = toFloridaTime(eventStart)
         const eventDateFlorida = eventStartFlorida.toISOString().split('T')[0]
         const eventTimeFlorida = `${String(eventStartFlorida.getHours()).padStart(2, '0')}:${String(eventStartFlorida.getMinutes()).padStart(2, '0')}`
-        
+
         // Check if reservation is for the same date and time (or within 30 minutes)
         if (eventDateFlorida === formData.reservationDate) {
           const [resHour, resMin] = formData.reservationTime.split(':').map(Number)
           const [eventHour, eventMin] = eventTimeFlorida.split(':').map(Number)
-          
+
           const resMinutes = resHour * 60 + resMin
           const eventMinutes = eventHour * 60 + eventMin
-          
+
           // If reservation time is within 30 minutes of event start, require email verification
           if (Math.abs(resMinutes - eventMinutes) <= 30) {
             return true
@@ -256,10 +236,10 @@ function ReservationsPageContent() {
       }
       return false
     })
-    
+
     // Check special hours prepayment
     const requiresSpecialHoursPrepayment = specialHoursInfo && isTimeSlotRequiringPrepayment(formData.reservationTime, specialHoursInfo)
-    
+
     return hasEventReservationPrice || requiresSpecialHoursPrepayment
   }
 
@@ -350,13 +330,13 @@ function ReservationsPageContent() {
 
       if (response.ok) {
         const data = await response.json()
-        
+
         // If prepayment is required, redirect to payment page
         if (data.prepaymentRequired && data.paymentUrl) {
           window.location.href = data.paymentUrl
           return
         }
-        
+
         // Store reservation data for success display
         setSuccessReservationData({
           ...formData,
@@ -372,7 +352,7 @@ function ReservationsPageContent() {
           guestsCount: 2,
           reservationDate: '',
           reservationTime: '',
-          area: '',
+          area: 'Restaurant',
           notes: '',
         })
         setCustomFields({})
@@ -384,7 +364,7 @@ function ReservationsPageContent() {
         const errorData = await response.json()
         setAvailabilityError(errorData.error || 'Failed to create reservation')
         setSubmitStatus('error')
-        
+
         // If it's an event conflict, reload events to show updated info
         if (errorData.eventConflict && errorData.event) {
           const events = await getEventsForDate(formData.reservationDate)
@@ -402,7 +382,7 @@ function ReservationsPageContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     // Check if email verification is required for pre-paid reservations
     if (requiresEmailVerification() && !emailVerified) {
       // Show email verification step
@@ -483,7 +463,7 @@ function ReservationsPageContent() {
                   <div className="flex items-center gap-2 sm:gap-2.5 text-blue-400">
                     <Info className="h-4 w-4 md:h-5 md:w-5 flex-shrink-0" />
                     <p className="text-xs sm:text-sm font-medium">
-                      {regularHours.is_closed 
+                      {regularHours.is_closed
                         ? 'We are closed on this day'
                         : `Regular hours: ${formatTime(regularHours.open_time)} - ${formatTime(regularHours.close_time)} (Florida Time) - Free reservations available`
                       }
@@ -510,14 +490,14 @@ function ReservationsPageContent() {
                         {eventsOnDate.map((event) => {
                           const eventStart = event.event_start
                           const eventEnd = event.event_end || null
-                          
+
                           const eventStartDate = typeof eventStart === 'string' ? parseISO(eventStart) : new Date(eventStart)
                           const bufferStartUTC = new Date(eventStartDate.getTime() - 1 * 60 * 60 * 1000)
-                          
+
                           let bufferEndUTC: Date
                           let eventEndDisplay: string
                           let bufferEndDisplay: string
-                          
+
                           if (eventEnd) {
                             const eventEndDate = typeof eventEnd === 'string' ? parseISO(eventEnd) : new Date(eventEnd)
                             bufferEndUTC = new Date(eventEndDate.getTime() + 1 * 60 * 60 * 1000)
@@ -525,37 +505,37 @@ function ReservationsPageContent() {
                             bufferEndDisplay = formatFloridaTime(bufferEndUTC, 'h:mm a')
                           } else {
                             eventEndDisplay = 'Until close'
-                            
+
                             let closeTimeStr: string | null = null
                             if (specialHoursInfo && specialHoursInfo.time_to) {
                               closeTimeStr = specialHoursInfo.time_to
                             } else if (regularHours && regularHours.close_time) {
                               closeTimeStr = regularHours.close_time
                             }
-                            
+
                             if (closeTimeStr) {
                               const [year, month, day] = formData.reservationDate.split('-').map(Number)
                               const [closeHour, closeMin] = closeTimeStr.split(':').map(Number)
-                              
+
                               const eventStartFlorida = toFloridaTime(eventStartDate)
                               const eventStartHour = eventStartFlorida.getHours()
-                              
+
                               let closeDate = new Date(year, month - 1, day, closeHour, closeMin, 0)
                               if (closeHour < eventStartHour && closeHour < 12 && eventStartHour >= 18) {
                                 closeDate = new Date(year, month - 1, day + 1, closeHour, closeMin, 0)
                               }
-                              
+
                               const { floridaToUTC } = require('@/lib/utils/timezone')
                               const closeTimeUTC = floridaToUTC(closeDate)
                               bufferEndUTC = new Date(closeTimeUTC.getTime() + 2 * 60 * 60 * 1000)
-                              
+
                               bufferEndDisplay = formatFloridaTime(bufferEndUTC, 'h:mm a')
                             } else {
                               bufferEndUTC = new Date(eventStartDate.getTime() + 5 * 60 * 60 * 1000)
                               bufferEndDisplay = formatFloridaTime(bufferEndUTC, 'h:mm a')
                             }
                           }
-                          
+
                           return (
                             <div key={event.id} className="bg-blue-500/5 rounded-md p-2 sm:p-2.5 border border-blue-500/15">
                               <p className="font-semibold text-blue-400 mb-1 text-xs sm:text-sm truncate">{event.title}</p>
@@ -566,7 +546,7 @@ function ReservationsPageContent() {
                               <p className="text-xs text-blue-400/70 mb-1 sm:mb-1.5">
                                 Reservations blocked: {formatFloridaTime(bufferStartUTC, 'h:mm a')} - {bufferEndDisplay}
                               </p>
-                              <a 
+                              <a
                                 href={`/events/${encodeURIComponent(event.slug)}`}
                                 className="text-xs text-blue-400 hover:text-blue-300 font-medium underline inline-flex items-center gap-1 transition-colors"
                               >
@@ -592,7 +572,7 @@ function ReservationsPageContent() {
                     <CheckCircle className="h-5 w-5 md:h-6 md:w-6 mt-0.5 sm:mt-1 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-sm sm:text-base mb-2 sm:mb-3">Reservation submitted successfully!</p>
-                      
+
                       <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
                         <div>
                           <span className="text-green-300/80">Email:</span>{' '}
@@ -618,7 +598,7 @@ function ReservationsPageContent() {
                           </div>
                         )}
                       </div>
-                      
+
                       <p className="text-green-300 mt-2 sm:mt-3 text-xs sm:text-sm">
                         We'll confirm your reservation shortly. You'll receive a confirmation email at {successReservationData.customerEmail}.
                       </p>
@@ -770,7 +750,7 @@ function ReservationsPageContent() {
                               const eventStartFlorida = toFloridaTime(eventStart)
                               const eventDateFlorida = eventStartFlorida.toISOString().split('T')[0]
                               const eventTimeFlorida = `${String(eventStartFlorida.getHours()).padStart(2, '0')}:${String(eventStartFlorida.getMinutes()).padStart(2, '0')}`
-                              
+
                               if (eventDateFlorida === formData.reservationDate) {
                                 const [slotHour, slotMin] = slot.split(':').map(Number)
                                 const [eventHour, eventMin] = eventTimeFlorida.split(':').map(Number)
@@ -795,8 +775,8 @@ function ReservationsPageContent() {
                           {specialHoursInfo && !specialHoursInfo.is_open
                             ? 'Closed'
                             : regularHours && regularHours.is_closed
-                            ? 'Closed'
-                            : 'No slots'}
+                              ? 'Closed'
+                              : 'No slots'}
                         </span>
                       </div>
                     )}
@@ -858,69 +838,66 @@ function ReservationsPageContent() {
                     id="area"
                     required
                     value={formData.area}
-                    onChange={(e) => setFormData({ ...formData, area: e.target.value })}
-                    className="w-full h-10 sm:h-11 md:h-12 rounded-lg border px-3 sm:px-4 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-transparent bg-[hsl(220,14%,18%)] text-white border-red-500/20"
+                    disabled
+                    className="w-full h-10 sm:h-11 md:h-12 rounded-lg border px-3 sm:px-4 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-transparent bg-[hsl(220,14%,18%)] text-white border-red-500/20 opacity-75 cursor-not-allowed"
                   >
-                    <option value="">Select an area</option>
                     <option value="Restaurant">Restaurant</option>
-                    <option value="Stage Bar">Stage Bar</option>
-                    <option value="Middle Bar">Middle Bar</option>
                   </select>
                 </div>
 
                 {/* Custom Fields from Special Hours */}
-                {specialHoursInfo?.special_hours_fields && 
-                 formData.reservationTime &&
-                 isTimeWithinSpecialHours(formData.reservationTime, specialHoursInfo) &&
-                 specialHoursInfo.special_hours_fields.map((field: any) => (
-                  <div key={field.id}>
-                    <Label htmlFor={field.field_key} className="text-xs sm:text-sm font-semibold mb-1.5 sm:mb-2 block">
-                      {field.field_label} {field.is_required && '*'}
-                    </Label>
-                    {field.field_type === 'textarea' ? (
-                      <Textarea
-                        id={field.field_key}
-                        required={field.is_required}
-                        rows={4}
-                        value={customFields[field.field_key] || ''}
-                        onChange={(e) =>
-                          setCustomFields({ ...customFields, [field.field_key]: e.target.value })
-                        }
-                        className="text-sm sm:text-base bg-[hsl(220,14%,18%)] border-red-500/20 text-gray-200"
-                        placeholder={field.field_label}
-                      />
-                    ) : field.field_type === 'select' ? (
-                      <select
-                        id={field.field_key}
-                        required={field.is_required}
-                        value={customFields[field.field_key] || ''}
-                        onChange={(e) =>
-                          setCustomFields({ ...customFields, [field.field_key]: e.target.value })
-                        }
-                        className="w-full h-10 sm:h-11 md:h-12 rounded-lg border px-3 sm:px-4 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-amber-500/50 bg-[hsl(220,14%,18%)] text-white border-red-500/20"
-                      >
-                        <option value="">Select {field.field_label}</option>
-                        {field.field_options?.map((option: string) => (
-                          <option key={option} value={option}>
-                            {option}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <Input
-                        id={field.field_key}
-                        required={field.is_required}
-                        type={field.field_type === 'number' ? 'number' : 'text'}
-                        value={customFields[field.field_key] || ''}
-                        onChange={(e) =>
-                          setCustomFields({ ...customFields, [field.field_key]: e.target.value })
-                        }
-                        className="h-10 sm:h-11 md:h-12 text-sm sm:text-base bg-[hsl(220,14%,18%)] border-red-500/20 text-gray-200"
-                        placeholder={field.field_label}
-                      />
-                    )}
-                  </div>
-                ))}
+                {specialHoursInfo?.special_hours_fields &&
+                  formData.reservationTime &&
+                  isTimeWithinSpecialHours(formData.reservationTime, specialHoursInfo) &&
+                  specialHoursInfo.special_hours_fields.map((field: any) => (
+                    <div key={field.id}>
+                      <Label htmlFor={field.field_key} className="text-xs sm:text-sm font-semibold mb-1.5 sm:mb-2 block">
+                        {field.field_label} {field.is_required && '*'}
+                      </Label>
+                      {field.field_type === 'textarea' ? (
+                        <Textarea
+                          id={field.field_key}
+                          required={field.is_required}
+                          rows={4}
+                          value={customFields[field.field_key] || ''}
+                          onChange={(e) =>
+                            setCustomFields({ ...customFields, [field.field_key]: e.target.value })
+                          }
+                          className="text-sm sm:text-base bg-[hsl(220,14%,18%)] border-red-500/20 text-gray-200"
+                          placeholder={field.field_label}
+                        />
+                      ) : field.field_type === 'select' ? (
+                        <select
+                          id={field.field_key}
+                          required={field.is_required}
+                          value={customFields[field.field_key] || ''}
+                          onChange={(e) =>
+                            setCustomFields({ ...customFields, [field.field_key]: e.target.value })
+                          }
+                          className="w-full h-10 sm:h-11 md:h-12 rounded-lg border px-3 sm:px-4 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-amber-500/50 bg-[hsl(220,14%,18%)] text-white border-red-500/20"
+                        >
+                          <option value="">Select {field.field_label}</option>
+                          {field.field_options?.map((option: string) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <Input
+                          id={field.field_key}
+                          required={field.is_required}
+                          type={field.field_type === 'number' ? 'number' : 'text'}
+                          value={customFields[field.field_key] || ''}
+                          onChange={(e) =>
+                            setCustomFields({ ...customFields, [field.field_key]: e.target.value })
+                          }
+                          className="h-10 sm:h-11 md:h-12 text-sm sm:text-base bg-[hsl(220,14%,18%)] border-red-500/20 text-gray-200"
+                          placeholder={field.field_label}
+                        />
+                      )}
+                    </div>
+                  ))}
 
                 {/* Notes - Full width */}
                 <div>
@@ -938,40 +915,40 @@ function ReservationsPageContent() {
                 </div>
 
                 {/* Special Hours Payment Info */}
-                {specialHoursInfo?.special_hours_payment?.[0]?.prepayment_required && 
-                 formData.reservationTime &&
-                 isTimeWithinSpecialHours(formData.reservationTime, specialHoursInfo) && (
-                  <div className="p-4 sm:p-5 md:p-6 bg-gradient-to-r from-yellow-50/10 to-amber-50/10 border-2 border-yellow-500/30 rounded-xl sm:rounded-2xl">
-                    <div className="flex items-start gap-2 sm:gap-3">
-                      <AlertCircle className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-400 mt-0.5 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-bold text-yellow-400 mb-1 text-sm sm:text-base">Prepayment Required</p>
-                        <p className="text-xs sm:text-sm text-yellow-300/90">
-                          {specialHoursInfo.special_hours_payment[0].prepayment_rule_type === 'percentage'
-                            ? `${specialHoursInfo.special_hours_payment[0].prepayment_percentage}% prepayment required`
-                            : specialHoursInfo.special_hours_payment[0].prepayment_rule_type === 'per_guest'
-                            ? `${specialHoursInfo.special_hours_payment[0].prepayment_amount} per guest prepayment required`
-                            : `${specialHoursInfo.special_hours_payment[0].prepayment_amount} prepayment required`}
-                        </p>
+                {specialHoursInfo?.special_hours_payment?.[0]?.prepayment_required &&
+                  formData.reservationTime &&
+                  isTimeWithinSpecialHours(formData.reservationTime, specialHoursInfo) && (
+                    <div className="p-4 sm:p-5 md:p-6 bg-gradient-to-r from-yellow-50/10 to-amber-50/10 border-2 border-yellow-500/30 rounded-xl sm:rounded-2xl">
+                      <div className="flex items-start gap-2 sm:gap-3">
+                        <AlertCircle className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-400 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-yellow-400 mb-1 text-sm sm:text-base">Prepayment Required</p>
+                          <p className="text-xs sm:text-sm text-yellow-300/90">
+                            {specialHoursInfo.special_hours_payment[0].prepayment_rule_type === 'percentage'
+                              ? `${specialHoursInfo.special_hours_payment[0].prepayment_percentage}% prepayment required`
+                              : specialHoursInfo.special_hours_payment[0].prepayment_rule_type === 'per_guest'
+                                ? `${specialHoursInfo.special_hours_payment[0].prepayment_amount} per guest prepayment required`
+                                : `${specialHoursInfo.special_hours_payment[0].prepayment_amount} prepayment required`}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
                 {/* Cancellation Policy */}
-                {specialHoursInfo?.special_hours_payment?.[0]?.cancellation_policy && 
-                 formData.reservationTime &&
-                 isTimeWithinSpecialHours(formData.reservationTime, specialHoursInfo) && (
-                  <div className="p-3 sm:p-4 bg-blue-500/5 border border-blue-500/20 rounded-lg sm:rounded-xl">
-                    <p className="text-xs sm:text-sm font-semibold text-blue-400 mb-1">Cancellation Policy</p>
-                    <p className="text-xs sm:text-sm text-blue-300/90">
-                      {specialHoursInfo.special_hours_payment[0].cancellation_policy_custom ||
-                        `Cancellation policy: ${specialHoursInfo.special_hours_payment[0].cancellation_policy}`}
-                      {specialHoursInfo.special_hours_payment[0].cancellation_hours_before &&
-                        ` (Cancel ${specialHoursInfo.special_hours_payment[0].cancellation_hours_before} hours before to avoid penalty)`}
-                    </p>
-                  </div>
-                )}
+                {specialHoursInfo?.special_hours_payment?.[0]?.cancellation_policy &&
+                  formData.reservationTime &&
+                  isTimeWithinSpecialHours(formData.reservationTime, specialHoursInfo) && (
+                    <div className="p-3 sm:p-4 bg-blue-500/5 border border-blue-500/20 rounded-lg sm:rounded-xl">
+                      <p className="text-xs sm:text-sm font-semibold text-blue-400 mb-1">Cancellation Policy</p>
+                      <p className="text-xs sm:text-sm text-blue-300/90">
+                        {specialHoursInfo.special_hours_payment[0].cancellation_policy_custom ||
+                          `Cancellation policy: ${specialHoursInfo.special_hours_payment[0].cancellation_policy}`}
+                        {specialHoursInfo.special_hours_payment[0].cancellation_hours_before &&
+                          ` (Cancel ${specialHoursInfo.special_hours_payment[0].cancellation_hours_before} hours before to avoid penalty)`}
+                      </p>
+                    </div>
+                  )}
 
                 {/* Submit Button */}
                 <Button
@@ -1006,7 +983,7 @@ function ReservationsPageContent() {
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-amber-400 text-sm sm:text-base">Reservation Policy</p>
                     <p className="text-xs sm:text-sm bar-text-muted">
-                      Reservations are held for 15 minutes past the scheduled time. 
+                      Reservations are held for 15 minutes past the scheduled time.
                       Please call if you're running late.
                     </p>
                   </div>
@@ -1016,7 +993,7 @@ function ReservationsPageContent() {
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-amber-400 text-sm sm:text-base">Large Parties</p>
                     <p className="text-xs sm:text-sm bar-text-muted break-words">
-                      {contactPhone ? `For parties of 8 or more, please call us directly at ${contactPhone}` : 'For parties of 8 or more, please contact us directly'} 
+                      {contactPhone ? `For parties of 8 or more, please call us directly at ${contactPhone}` : 'For parties of 8 or more, please contact us directly'}
                       to ensure we can accommodate your group.
                     </p>
                   </div>
