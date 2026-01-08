@@ -7,26 +7,30 @@ import { Toaster } from "@/components/ui/toaster"
 import ScrollToTop from "@/components/ScrollToTop"
 import RouteLoaderWrapper from "@/components/RouteLoaderWrapper"
 import { ErrorBoundary } from "@/components/ErrorBoundary"
+import { getAllSiteSettings } from "@/lib/queries"
 
-const inter = Inter({ 
+const inter = Inter({
   subsets: ["latin"],
   variable: '--font-inter',
   display: 'swap',
 })
 
-const oswald = Oswald({ 
+const oswald = Oswald({
   subsets: ["latin"],
   weight: ['400', '500', '600', '700'],
   variable: '--font-oswald',
   display: 'swap',
 })
 
-const bebasNeue = Bebas_Neue({ 
+const bebasNeue = Bebas_Neue({
   weight: '400',
   subsets: ["latin"],
   variable: '--font-bebas',
   display: 'swap',
 })
+
+// Cache layout data for 1 hour suitable for global settings like Footer/Contact info
+export const revalidate = 3600
 
 export const metadata: Metadata = {
   title: {
@@ -43,7 +47,7 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_BASE_URL 
+  metadataBase: process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_BASE_URL
     ? new URL(process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_BASE_URL!)
     : undefined,
   openGraph: {
@@ -89,11 +93,13 @@ export const viewport = {
   userScalable: true,
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const siteSettings = await getAllSiteSettings()
+
   return (
     <html lang="en" className="dark">
       <body className={`${inter.variable} ${oswald.variable} ${bebasNeue.variable} font-sans`}>
@@ -105,7 +111,7 @@ export default function RootLayout({
             <main className="flex-grow relative z-10 page-transition-enhanced">
               {children}
             </main>
-            <Footer />
+            <Footer siteSettings={siteSettings} />
             <ScrollToTop />
             <Toaster />
           </div>

@@ -15,48 +15,43 @@ interface HomeClientProps {
   galleryImages?: any[]
   partiesImages?: any[]
   homeFeatures?: any[]
+  siteSettings?: any
+  openingHours?: any[]
 }
 
-export default function HomeClient({ banners, featuredItems, upcomingEvents, galleryImages = [], partiesImages = [], homeFeatures = [] }: HomeClientProps) {
+export default function HomeClient({
+  banners,
+  featuredItems,
+  upcomingEvents,
+  galleryImages = [],
+  partiesImages = [],
+  homeFeatures = [],
+  siteSettings = {},
+  openingHours = []
+}: HomeClientProps) {
   const validBanners = Array.isArray(banners) ? banners.filter(b => b) : []
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0)
-  const [openingHours, setOpeningHours] = useState<any[]>([])
-  const [siteInfo, setSiteInfo] = useState({
-    address: '',
-    phone: '',
-    email: ''
-  })
+
+  const siteInfo = {
+    address: siteSettings.restaurant_address || siteSettings.address || '',
+    phone: siteSettings.restaurant_phone || siteSettings.phone || '',
+    email: siteSettings.restaurant_email || siteSettings.email || ''
+  }
+
   // Use static logo from public folder - always available, cached
   const logoUrl = '/images/good-times-logo.png'
 
   // Limit events to 2 featured
   const featuredEvents = upcomingEvents.slice(0, 2)
-  
+
   // Limit menu items to 4
   const previewMenuItems = featuredItems.slice(0, 4)
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Fetch opening hours
-        const hours = await getOpeningHours()
-        setOpeningHours(hours || [])
-        
-        // Fetch site settings (address, phone, email)
-        const settings = await getAllSiteSettings()
-        setSiteInfo({
-          address: settings.restaurant_address || settings.address || '',
-          phone: settings.restaurant_phone || settings.phone || '',
-          email: settings.restaurant_email || settings.email || ''
-        })
-
-        // Logo is already fetched server-side and passed as prop (no client-side fetching needed)
-      } catch (error) {
-        console.error('Error fetching data:', error)
-      }
+    if (validBanners.length > 0 && currentBannerIndex >= validBanners.length) {
+      setCurrentBannerIndex(0)
     }
-    fetchData()
-  }, [])
+  }, [validBanners.length, currentBannerIndex])
 
   useEffect(() => {
     if (validBanners.length > 0 && currentBannerIndex >= validBanners.length) {
@@ -112,7 +107,7 @@ export default function HomeClient({ banners, featuredItems, upcomingEvents, gal
           <div className="relative w-full aspect-[16/10] md:h-[60vh] md:max-h-[600px] md:min-h-[400px] rounded-2xl sm:rounded-3xl md:rounded-3xl overflow-hidden group">
             {/* Logo in top-left corner - Always visible */}
             <div className="absolute top-3 left-3 sm:top-4 sm:left-4 md:top-5 md:left-5 z-30">
-              <Image 
+              <Image
                 src={logoUrl}
                 alt="Good Times Bar & Grill Logo"
                 width={100}
@@ -121,8 +116,8 @@ export default function HomeClient({ banners, featuredItems, upcomingEvents, gal
                 style={{ background: 'transparent' }}
                 priority
                 unoptimized={true}
-                // Static logo from /public/images/good-times-logo.png
-                // Always available, cached via Cache-Control headers (1 year cache)
+              // Static logo from /public/images/good-times-logo.png
+              // Always available, cached via Cache-Control headers (1 year cache)
               />
             </div>
 
@@ -131,9 +126,8 @@ export default function HomeClient({ banners, featuredItems, upcomingEvents, gal
               {validBanners.map((banner, index) => (
                 <div
                   key={banner.id || `banner-${index}`}
-                  className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
-                    index === currentBannerIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'
-                  }`}
+                  className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${index === currentBannerIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'
+                    }`}
                 >
                   {banner.image_path ? (
                     <>
@@ -205,11 +199,10 @@ export default function HomeClient({ banners, featuredItems, upcomingEvents, gal
                     <button
                       key={index}
                       onClick={() => setCurrentBannerIndex(index)}
-                      className={`h-[2px] sm:h-1 md:h-1.5 lg:h-2 rounded-full transition-all duration-300 touch-manipulation ${
-                        index === currentBannerIndex
-                          ? 'w-[6px] sm:w-2 md:w-4 lg:w-6 xl:w-8 bg-[#F59E0B]'
-                          : 'w-[2px] sm:w-1 md:w-1.5 lg:w-2 bg-white/40 hover:bg-white/60'
-                      }`}
+                      className={`h-[2px] sm:h-1 md:h-1.5 lg:h-2 rounded-full transition-all duration-300 touch-manipulation ${index === currentBannerIndex
+                        ? 'w-[6px] sm:w-2 md:w-4 lg:w-6 xl:w-8 bg-[#F59E0B]'
+                        : 'w-[2px] sm:w-1 md:w-1.5 lg:w-2 bg-white/40 hover:bg-white/60'
+                        }`}
                       aria-label={`Go to banner ${index + 1}`}
                     />
                   ))}
@@ -283,13 +276,13 @@ export default function HomeClient({ banners, featuredItems, upcomingEvents, gal
                 );
 
                 return (
-                  <div 
-                    key={feature.id || index} 
+                  <div
+                    key={feature.id || index}
                     className="sm:animate-fade-in-up"
                     style={{ animationDelay: `${index * 0.1}s` }}
                   >
                     {feature.link ? (
-                      <Link 
+                      <Link
                         href={feature.link}
                         className="block"
                       >
@@ -349,7 +342,7 @@ export default function HomeClient({ banners, featuredItems, upcomingEvents, gal
                       <Music className="h-10 w-10 sm:h-12 sm:w-12 text-[#F59E0B] opacity-50" />
                     </div>
                   )}
-                  
+
                   <div className="flex-1 flex flex-col justify-between space-y-2 sm:space-y-2.5 px-1">
                     <h3 className="card-title group-hover:text-[#F59E0B] transition-colors text-base sm:text-lg md:text-xl leading-tight line-clamp-2">
                       {event.title}
@@ -495,9 +488,9 @@ export default function HomeClient({ banners, featuredItems, upcomingEvents, gal
                   ? item.menu_item_variants[0].price
                   : item.base_price || 0
                 return (
-                  <div 
-                    key={item.id} 
-                    className="menu-item-card-premium sm:animate-fade-in-up-enhanced group rounded-lg md:rounded-xl card-hover-premium min-h-[180px] sm:min-h-[200px] md:min-h-[220px]" 
+                  <div
+                    key={item.id}
+                    className="menu-item-card-premium sm:animate-fade-in-up-enhanced group rounded-lg md:rounded-xl card-hover-premium min-h-[180px] sm:min-h-[200px] md:min-h-[220px]"
                     style={{ animationDelay: `${index * 0.1}s` }}
                   >
                     {/* Image Section */}
@@ -736,12 +729,12 @@ export default function HomeClient({ banners, featuredItems, upcomingEvents, gal
                     openingHours.map((hour: any) => {
                       const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
                       const dayName = dayNames[hour.weekday] || `Day ${hour.weekday}`
-                      const timeDisplay = hour.is_closed 
-                        ? 'Closed' 
+                      const timeDisplay = hour.is_closed
+                        ? 'Closed'
                         : hour.open_time && hour.close_time
-                        ? `${convert24To12(hour.open_time)} - ${convert24To12(hour.close_time)}`
-                        : 'Closed'
-                      
+                          ? `${convert24To12(hour.open_time)} - ${convert24To12(hour.close_time)}`
+                          : 'Closed'
+
                       return (
                         <div key={hour.weekday} className="flex justify-between">
                           <span>{dayName}</span>
@@ -777,123 +770,61 @@ export default function HomeClient({ banners, featuredItems, upcomingEvents, gal
 
 // Contact & Location Combined Card Component
 function ContactAndLocationCard({ siteInfo }: { siteInfo: { address: string; phone: string; email: string } }) {
-  const [contactInfo, setContactInfo] = useState({
-    phone: '',
-    email: ''
-  })
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    const fetchContactInfo = async () => {
-      try {
-        const settings = await getAllSiteSettings()
-        setContactInfo({
-          phone: settings.restaurant_phone || settings.phone || '',
-          email: settings.restaurant_email || settings.email || ''
-        })
-      } catch (error) {
-        console.error('Error fetching contact info:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchContactInfo()
-  }, [])
-
-  if (loading) {
-    return (
-      <div className="event-item-card">
-        <h3 className="card-title mb-4 leading-relaxed">Contact & Location</h3>
-        <p className="body-text opacity-50">Loading information...</p>
-      </div>
-    )
-  }
-
-  const hasContact = contactInfo.phone || contactInfo.email
-  const hasLocation = siteInfo.address
-
-  if (!hasContact && !hasLocation) {
-    return null
+  // Directly use the passed siteInfo props without additional fetching
+  const contactInfo = {
+    phone: siteInfo.phone,
+    email: siteInfo.email
   }
 
   return (
-    <div className="event-item-card">
+    <div className="event-item-card h-full">
       <h3 className="card-title mb-4 leading-relaxed">Contact & Location</h3>
-      
-      {/* Contact Section */}
-      {hasContact && (
-        <div className="space-y-3 mb-6">
-          {contactInfo.phone && (
-            <div className="flex items-start gap-3">
-              <Phone className="h-5 w-5 text-[#F59E0B] mt-1 flex-shrink-0" />
-              <div className="flex-1">
-                <a 
-                  href={`tel:${contactInfo.phone.replace(/\D/g, '')}`} 
-                  className="body-text hover:text-[#F59E0B] transition-colors block mb-2 leading-relaxed"
-                >
-                  {contactInfo.phone}
-                </a>
-                <a 
-                  href={`tel:${contactInfo.phone.replace(/\D/g, '')}`}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-[#F59E0B]/10 hover:bg-[#F59E0B]/20 border border-[#F59E0B]/30 hover:border-[#F59E0B]/50 text-[#F59E0B] rounded-lg transition-all duration-300 hover:scale-105 hover:shadow-[0_0_12px_rgba(245,158,11,0.3)] relative z-10"
-                  style={{ position: 'relative', zIndex: 10 }}
-                >
-                  <Phone className="h-3.5 w-3.5" />
-                  <span>Call Us</span>
-                </a>
-              </div>
-            </div>
-          )}
-          {contactInfo.email && (
-            <div className="flex items-start gap-3">
-              <Mail className="h-5 w-5 text-[#F59E0B] mt-1 flex-shrink-0" />
-              <div className="flex-1">
-                <a 
-                  href={`mailto:${contactInfo.email}`} 
-                  className="body-text hover:text-[#F59E0B] transition-colors break-all block mb-2 leading-relaxed"
-                >
-                  {contactInfo.email}
-                </a>
-                <a 
-                  href={`mailto:${contactInfo.email}`}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-[#F59E0B]/10 hover:bg-[#F59E0B]/20 border border-[#F59E0B]/30 hover:border-[#F59E0B]/50 text-[#F59E0B] rounded-lg transition-all duration-300 hover:scale-105 hover:shadow-[0_0_12px_rgba(245,158,11,0.3)] relative z-10"
-                  style={{ position: 'relative', zIndex: 10 }}
-                >
-                  <Mail className="h-3.5 w-3.5" />
-                  <span>Send Email</span>
-                </a>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Location Section */}
-      {hasLocation && (
+      <div className="space-y-4 body-text leading-relaxed">
         <div className="flex items-start gap-3">
-          <MapPin className="h-5 w-5 text-[#F59E0B] mt-1 flex-shrink-0" />
-          <div className="flex-1">
-            <a 
-              href={`https://maps.google.com/?q=${encodeURIComponent(siteInfo.address)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="body-text hover:text-[#F59E0B] transition-colors leading-relaxed block mb-3"
-            >
+          <MapPin className="h-5 w-5 text-[#F59E0B] flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="font-semibold text-white mb-1">Visit Us</p>
+            <p className="text-gray-400">
               {siteInfo.address}
-            </a>
-            <a 
+            </p>
+            <a
               href={`https://maps.google.com/?q=${encodeURIComponent(siteInfo.address)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-[#F59E0B]/10 hover:bg-[#F59E0B]/20 border border-[#F59E0B]/30 hover:border-[#F59E0B]/50 text-[#F59E0B] rounded-lg transition-all duration-300 hover:scale-105 hover:shadow-[0_0_12px_rgba(245,158,11,0.3)] relative z-10"
-              style={{ position: 'relative', zIndex: 10 }}
+              className="inline-block mt-2 text-sm text-[#F59E0B] hover:text-[#F59E0B]/80 font-medium transition-colors"
             >
-              <MapPin className="h-3.5 w-3.5" />
-              <span>Get Directions</span>
+              Get Directions →
             </a>
           </div>
         </div>
-      )}
+
+        <div className="flex items-center gap-3">
+          <Phone className="h-5 w-5 text-[#F59E0B] flex-shrink-0" />
+          <div>
+            <p className="font-semibold text-white mb-1">Call Us</p>
+            <a
+              href={`tel:${contactInfo.phone.replace(/\D/g, '')}`}
+              className="text-gray-400 hover:text-[#F59E0B] transition-colors block"
+            >
+              {contactInfo.phone}
+            </a>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Mail className="h-5 w-5 text-[#F59E0B] flex-shrink-0" />
+          <div>
+            <p className="font-semibold text-white mb-1">Email Us</p>
+            <a
+              href={`mailto:${contactInfo.email}`}
+              className="text-gray-400 hover:text-[#F59E0B] transition-colors break-all block"
+            >
+              {contactInfo.email}
+            </a>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
+

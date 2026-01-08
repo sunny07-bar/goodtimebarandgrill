@@ -1,76 +1,49 @@
-'use client'
-
 import { useState, useEffect } from 'react'
 import { MapPin, Phone, Mail, Instagram, Facebook } from 'lucide-react'
-import { getAllSiteSettings } from '@/lib/queries'
 
-export default function Footer() {
-  const [siteInfo, setSiteInfo] = useState({
-    restaurant_name: '',
-    address: '',
-    phone: '',
-    email: '',
-    instagram_user_id: '',
-    instagram_url: '',
-    facebook_user_id: '',
-    facebook_url: ''
-  })
-  const [loading, setLoading] = useState(true)
+// Helper to extract username/url
+const extractUsername = (value: string): { username: string; url: string } => {
+  const trimmed = value?.toString().trim() || ''
+  if (!trimmed) return { username: '', url: '' }
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Fetch all site settings
-        const settings = await getAllSiteSettings()
-        
-        // Extract username from URL or use as-is
-        const extractUsername = (value: string): { username: string; url: string } => {
-          const trimmed = value.toString().trim()
-          if (!trimmed) return { username: '', url: '' }
-          
-          // Remove @ if present
-          let cleaned = trimmed.replace(/^@/, '')
-          
-          // Extract username from URL
-          const instagramMatch = cleaned.match(/(?:instagram\.com\/|^)([^\/\?]+)/i)
-          const facebookMatch = cleaned.match(/(?:facebook\.com\/|^)([^\/\?]+)/i)
-          
-          if (instagramMatch && instagramMatch[1]) {
-            const username = instagramMatch[1]
-            return { username, url: `https://instagram.com/${username}` }
-          }
-          if (facebookMatch && facebookMatch[1]) {
-            const username = facebookMatch[1]
-            return { username, url: `https://facebook.com/${username}` }
-          }
-          
-          // If no URL pattern, assume it's just a username
-          return { username: cleaned, url: cleaned.startsWith('http') ? cleaned : '' }
-        }
-        
-        const instagramData = extractUsername(settings.instagram_user_id || '')
-        const facebookData = extractUsername(settings.facebook_user_id || '')
-        
-        setSiteInfo({
-          restaurant_name: settings.restaurant_name || '',
-          address: settings.restaurant_address || settings.address || '',
-          phone: settings.restaurant_phone || settings.phone || '',
-          email: settings.restaurant_email || settings.email || '',
-          instagram_user_id: instagramData.username,
-          instagram_url: instagramData.url,
-          facebook_user_id: facebookData.username,
-          facebook_url: facebookData.url
-        })
+  // Remove @ if present
+  let cleaned = trimmed.replace(/^@/, '')
 
-      } catch (error) {
-        console.error('Error fetching footer data:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
+  // Extract username from URL
+  const instagramMatch = cleaned.match(/(?:instagram\.com\/|^)([^\/\?]+)/i)
+  const facebookMatch = cleaned.match(/(?:facebook\.com\/|^)([^\/\?]+)/i)
 
-    fetchData()
-  }, [])
+  if (instagramMatch && instagramMatch[1]) {
+    const username = instagramMatch[1]
+    return { username, url: `https://instagram.com/${username}` }
+  }
+  if (facebookMatch && facebookMatch[1]) {
+    const username = facebookMatch[1]
+    return { username, url: `https://facebook.com/${username}` }
+  }
+
+  // If no URL pattern, assume it's just a username
+  return { username: cleaned, url: cleaned.startsWith('http') ? cleaned : '' }
+}
+
+interface FooterProps {
+  siteSettings?: any
+}
+
+export default function Footer({ siteSettings = {} }: FooterProps) {
+  const instagramData = extractUsername(siteSettings.instagram_user_id || '')
+  const facebookData = extractUsername(siteSettings.facebook_user_id || '')
+
+  const siteInfo = {
+    restaurant_name: siteSettings.restaurant_name || '',
+    address: siteSettings.restaurant_address || siteSettings.address || '',
+    phone: siteSettings.restaurant_phone || siteSettings.phone || '',
+    email: siteSettings.restaurant_email || siteSettings.email || '',
+    instagram_user_id: instagramData.username,
+    instagram_url: instagramData.url,
+    facebook_user_id: facebookData.username,
+    facebook_url: facebookData.url
+  }
 
   return (
     <footer className="footer-dark pt-10 pb-6 animate-fade-in-up">
@@ -86,8 +59,8 @@ export default function Footer() {
               </div>
               <div className="flex items-center gap-2 text-sm text-[#D1D5DB]">
                 <Phone className="h-4 w-4 text-[#F59E0B] flex-shrink-0" />
-                <a 
-                  href={`tel:${siteInfo.phone.replace(/\D/g, '')}`} 
+                <a
+                  href={`tel:${siteInfo.phone.replace(/\D/g, '')}`}
                   className="hover:text-[#F59E0B] transition-colors"
                 >
                   {siteInfo.phone}
@@ -95,8 +68,8 @@ export default function Footer() {
               </div>
               <div className="flex items-center gap-2 text-sm text-[#D1D5DB]">
                 <Mail className="h-4 w-4 text-[#F59E0B] flex-shrink-0" />
-                <a 
-                  href={`mailto:${siteInfo.email}`} 
+                <a
+                  href={`mailto:${siteInfo.email}`}
                   className="hover:text-[#F59E0B] transition-colors break-all"
                 >
                   {siteInfo.email}
@@ -140,7 +113,7 @@ export default function Footer() {
         {/* Copyright */}
         <div className="border-t border-white/10 pt-6 mt-6 text-center">
           <p className="text-xs text-[#D1D5DB] opacity-70">
-            © {new Date().getFullYear()} {siteInfo.restaurant_name || 'Good Times Bar & Grill'}. All rights reserved.
+            &copy; {new Date().getFullYear()} {siteInfo.restaurant_name || 'Good Times Bar & Grill'}. All rights reserved.
           </p>
         </div>
       </div>

@@ -423,20 +423,20 @@ function ReservationsPageContent() {
   }
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 py-12 md:py-16">
+    <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-12 md:py-16">
       <AnimatedSection direction="down">
-        <div className="text-center mb-14 md:mb-18">
-          <div className="inline-block px-4 py-1.5 bg-amber-500/10 border border-amber-500/25 rounded-full mb-5 md:mb-6">
+        <div className="text-center mb-10 sm:mb-14 md:mb-18">
+          <div className="inline-block px-4 py-1.5 bg-amber-500/10 border border-amber-500/25 rounded-full mb-4 sm:mb-5 md:mb-6">
             <span className="text-xs md:text-sm font-semibold text-amber-400 uppercase tracking-wider flex items-center gap-2 justify-center">
               <Calendar className="h-3.5 w-3.5 md:h-4 md:w-4" />
               Reservations
             </span>
           </div>
-          <h1 className="text-display-1 font-extrabold heading-gradient-neon mb-5 md:mb-6 leading-tight display-heading">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold heading-gradient-neon mb-4 sm:mb-5 md:mb-6 leading-tight">
             MAKE A RESERVATION
           </h1>
-          <div className="w-20 md:w-28 h-0.5 md:h-1 bg-gradient-to-r from-amber-500 via-red-500 to-amber-500 mx-auto rounded-full mb-6 md:mb-7"></div>
-          <p className="text-body-large bar-text-light max-w-3xl mx-auto">
+          <div className="w-20 md:w-28 h-0.5 md:h-1 bg-gradient-to-r from-amber-500 via-red-500 to-amber-500 mx-auto rounded-full mb-5 sm:mb-6 md:mb-7"></div>
+          <p className="text-base sm:text-lg md:text-xl bar-text-light max-w-3xl mx-auto px-4">
             Book your table in advance and ensure a great dining experience.
           </p>
         </div>
@@ -445,24 +445,24 @@ function ReservationsPageContent() {
       <div className="max-w-4xl mx-auto">
         <AnimatedSection direction="up">
           <Card className="bar-card-premium shadow-2xl">
-            <CardContent className="p-6 md:p-8 lg:p-10">
+            <CardContent className="p-4 sm:p-6 md:p-8 lg:p-10">
               {/* Special Hours Banner */}
               {specialHoursInfo && (
-                <div className="mb-7 md:mb-8 p-5 md:p-6 bg-gradient-to-r from-amber-500/10 via-red-500/10 to-amber-500/10 rounded-xl border border-amber-500/25 shadow-lg">
-                  <div className="flex items-start gap-4">
-                    <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg p-2.5 shadow-lg">
-                      <Sparkles className="h-5 w-5 md:h-6 md:w-6 text-white" />
+                <div className="mb-6 sm:mb-7 md:mb-8 p-4 sm:p-5 md:p-6 bg-gradient-to-r from-amber-500/10 via-red-500/10 to-amber-500/10 rounded-xl border border-amber-500/25 shadow-lg">
+                  <div className="flex items-start gap-3 sm:gap-4">
+                    <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg p-2 sm:p-2.5 shadow-lg flex-shrink-0">
+                      <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-white" />
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2.5">
-                        <h3 className="text-display-3 font-bold text-amber-400 display-heading">{specialHoursInfo.title}</h3>
-                        <span className="px-2.5 py-1 bg-amber-500/20 rounded-full text-xs font-semibold text-amber-400">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2 sm:mb-2.5 flex-wrap">
+                        <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-amber-400">{specialHoursInfo.title}</h3>
+                        <span className="px-2 sm:px-2.5 py-0.5 sm:py-1 bg-amber-500/20 rounded-full text-xs font-semibold text-amber-400">
                           Special Hours
                         </span>
                       </div>
                       {specialHoursInfo.time_from && specialHoursInfo.time_to && (
-                        <p className="text-body bar-text-light mb-2 flex items-center gap-2">
-                          <Clock className="h-4 w-4 md:h-5 md:w-5 text-amber-400" />
+                        <p className="text-sm sm:text-base bar-text-light mb-2 flex items-center gap-2">
+                          <Clock className="h-4 w-4 md:h-5 md:w-5 text-amber-400 flex-shrink-0" />
                           <span className="font-semibold">
                             {formatTime(specialHoursInfo.time_from)} - {formatTime(specialHoursInfo.time_to)}
                           </span>
@@ -470,19 +470,19 @@ function ReservationsPageContent() {
                         </p>
                       )}
                       {specialHoursInfo.note && (
-                        <p className="bar-text-muted text-body-small mt-2">{specialHoursInfo.note}</p>
+                        <p className="bar-text-muted text-xs sm:text-sm mt-2">{specialHoursInfo.note}</p>
                       )}
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Regular Hours Info - Show when no special hours OR when special hours exist (to show both) */}
+              {/* Regular Hours Info */}
               {regularHours && (
-                <div className="mb-7 md:mb-8 p-4 bg-blue-500/10 rounded-xl border border-blue-500/25">
-                  <div className="flex items-center gap-2.5 text-blue-400">
-                    <Info className="h-4 w-4 md:h-5 md:w-5" />
-                    <p className="text-body-small font-medium">
+                <div className="mb-6 sm:mb-7 md:mb-8 p-3 sm:p-4 bg-blue-500/10 rounded-xl border border-blue-500/25">
+                  <div className="flex items-center gap-2 sm:gap-2.5 text-blue-400">
+                    <Info className="h-4 w-4 md:h-5 md:w-5 flex-shrink-0" />
+                    <p className="text-xs sm:text-sm font-medium">
                       {regularHours.is_closed 
                         ? 'We are closed on this day'
                         : `Regular hours: ${formatTime(regularHours.open_time)} - ${formatTime(regularHours.close_time)} (Florida Time) - Free reservations available`
@@ -494,31 +494,26 @@ function ReservationsPageContent() {
 
               {/* Event Conflict Warning */}
               {eventsOnDate.length > 0 && (
-                <div className="mb-6 p-4 md:p-5 bg-gradient-to-br from-blue-500/8 via-purple-500/8 to-blue-500/8 rounded-lg border border-blue-500/20 shadow-md backdrop-blur-sm">
-                  <div className="flex items-start gap-3">
-                    <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg p-2 shadow-md flex-shrink-0">
-                      <Calendar className="h-4 w-4 text-white" />
+                <div className="mb-6 p-3 sm:p-4 md:p-5 bg-gradient-to-br from-blue-500/8 via-purple-500/8 to-blue-500/8 rounded-lg border border-blue-500/20 shadow-md backdrop-blur-sm">
+                  <div className="flex items-start gap-2 sm:gap-3">
+                    <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg p-1.5 sm:p-2 shadow-md flex-shrink-0">
+                      <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2.5 flex-wrap">
-                        <h3 className="text-sm md:text-base font-bold text-blue-400">Event Scheduled</h3>
-                        <span className="px-2 py-0.5 bg-blue-500/20 rounded-full text-xs font-semibold text-blue-400">
+                      <div className="flex items-center gap-2 mb-2 sm:mb-2.5 flex-wrap">
+                        <h3 className="text-sm sm:text-base font-bold text-blue-400">Event Scheduled</h3>
+                        <span className="px-1.5 sm:px-2 py-0.5 bg-blue-500/20 rounded-full text-xs font-semibold text-blue-400">
                           {eventsOnDate.length} Event{eventsOnDate.length !== 1 ? 's' : ''}
                         </span>
                       </div>
-                      <div className="space-y-2 mb-3">
+                      <div className="space-y-2 mb-2 sm:mb-3">
                         {eventsOnDate.map((event) => {
-                          // Event times are stored in UTC, formatFloridaTime converts to Florida timezone for display
                           const eventStart = event.event_start
                           const eventEnd = event.event_end || null
                           
-                          // Parse event times (stored in UTC)
                           const eventStartDate = typeof eventStart === 'string' ? parseISO(eventStart) : new Date(eventStart)
-                          
-                          // Calculate buffer start (1 hour before event start)
                           const bufferStartUTC = new Date(eventStartDate.getTime() - 1 * 60 * 60 * 1000)
                           
-                          // For buffer end: if event has end time, use it; otherwise show "Until close"
                           let bufferEndUTC: Date
                           let eventEndDisplay: string
                           let bufferEndDisplay: string
@@ -529,10 +524,8 @@ function ReservationsPageContent() {
                             eventEndDisplay = formatFloridaTime(eventEnd, 'h:mm a')
                             bufferEndDisplay = formatFloridaTime(bufferEndUTC, 'h:mm a')
                           } else {
-                            // No event end time - show "Until close"
                             eventEndDisplay = 'Until close'
                             
-                            // For display, calculate buffer end using restaurant closing time
                             let closeTimeStr: string | null = null
                             if (specialHoursInfo && specialHoursInfo.time_to) {
                               closeTimeStr = specialHoursInfo.time_to
@@ -541,46 +534,37 @@ function ReservationsPageContent() {
                             }
                             
                             if (closeTimeStr) {
-                              // Parse closing time (HH:MM format)
                               const [year, month, day] = formData.reservationDate.split('-').map(Number)
                               const [closeHour, closeMin] = closeTimeStr.split(':').map(Number)
                               
-                              // Get event start time in Florida timezone to compare hours
                               const eventStartFlorida = toFloridaTime(eventStartDate)
                               const eventStartHour = eventStartFlorida.getHours()
                               
-                              // Determine if closing time is on the same day or next day
-                              // If closing hour is less than event start hour (and event is late night),
-                              // closing time is likely on the next day
                               let closeDate = new Date(year, month - 1, day, closeHour, closeMin, 0)
                               if (closeHour < eventStartHour && closeHour < 12 && eventStartHour >= 18) {
-                                // Closing time is likely next day (e.g., event at 10 PM, close at 2 AM)
                                 closeDate = new Date(year, month - 1, day + 1, closeHour, closeMin, 0)
                               }
                               
-                              // Convert to UTC and add 2-hour buffer
                               const { floridaToUTC } = require('@/lib/utils/timezone')
                               const closeTimeUTC = floridaToUTC(closeDate)
                               bufferEndUTC = new Date(closeTimeUTC.getTime() + 2 * 60 * 60 * 1000)
                               
-                              // Format the buffer end time
                               bufferEndDisplay = formatFloridaTime(bufferEndUTC, 'h:mm a')
                             } else {
-                              // Fallback: use event start + 5 hours
                               bufferEndUTC = new Date(eventStartDate.getTime() + 5 * 60 * 60 * 1000)
                               bufferEndDisplay = formatFloridaTime(bufferEndUTC, 'h:mm a')
                             }
                           }
                           
                           return (
-                            <div key={event.id} className="bg-blue-500/5 rounded-md p-2.5 border border-blue-500/15">
-                              <p className="font-semibold text-blue-400 mb-1 text-xs md:text-sm truncate">{event.title}</p>
-                              <p className="text-xs text-blue-300/90 mb-1.5 flex items-center gap-1">
+                            <div key={event.id} className="bg-blue-500/5 rounded-md p-2 sm:p-2.5 border border-blue-500/15">
+                              <p className="font-semibold text-blue-400 mb-1 text-xs sm:text-sm truncate">{event.title}</p>
+                              <p className="text-xs text-blue-300/90 mb-1 sm:mb-1.5 flex items-center gap-1">
                                 <Clock className="h-3 w-3 flex-shrink-0" />
                                 <span>Event: {formatFloridaTime(eventStart, 'h:mm a')} - {eventEndDisplay}</span>
                               </p>
-                              <p className="text-xs text-blue-400/70 mb-1.5">
-                                Reservations blocked: {formatFloridaTime(bufferStartUTC, 'h:mm a')} - {bufferEndDisplay} (2-hour buffer)
+                              <p className="text-xs text-blue-400/70 mb-1 sm:mb-1.5">
+                                Reservations blocked: {formatFloridaTime(bufferStartUTC, 'h:mm a')} - {bufferEndDisplay}
                               </p>
                               <a 
                                 href={`/events/${encodeURIComponent(event.slug)}`}
@@ -603,13 +587,13 @@ function ReservationsPageContent() {
               )}
 
               {submitStatus === 'success' && successReservationData && (
-                <div className="mb-6 p-5 md:p-6 bg-green-500/10 border border-green-500/30 rounded-xl">
-                  <div className="flex items-start gap-3 text-green-400">
-                    <CheckCircle className="h-5 w-5 md:h-6 md:w-6 mt-1 flex-shrink-0" />
-                    <div className="flex-1">
-                      <p className="font-bold text-body mb-3">Reservation submitted successfully!</p>
+                <div className="mb-6 p-4 sm:p-5 md:p-6 bg-green-500/10 border border-green-500/30 rounded-xl">
+                  <div className="flex items-start gap-2 sm:gap-3 text-green-400">
+                    <CheckCircle className="h-5 w-5 md:h-6 md:w-6 mt-0.5 sm:mt-1 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm sm:text-base mb-2 sm:mb-3">Reservation submitted successfully!</p>
                       
-                      <div className="space-y-2 text-body-small">
+                      <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
                         <div>
                           <span className="text-green-300/80">Email:</span>{' '}
                           <span className="font-semibold text-green-200">{successReservationData.customerEmail}</span>
@@ -635,7 +619,7 @@ function ReservationsPageContent() {
                         )}
                       </div>
                       
-                      <p className="text-green-300 mt-3 text-body-small">
+                      <p className="text-green-300 mt-2 sm:mt-3 text-xs sm:text-sm">
                         We'll confirm your reservation shortly. You'll receive a confirmation email at {successReservationData.customerEmail}.
                       </p>
                     </div>
@@ -644,12 +628,12 @@ function ReservationsPageContent() {
               )}
 
               {submitStatus === 'error' && (
-                <div className="mb-6 p-5 md:p-6 bg-red-500/10 border border-red-500/30 rounded-xl">
-                  <div className="flex items-center gap-3 text-red-400">
-                    <AlertCircle className="h-5 w-5 md:h-6 md:w-6" />
-                    <div>
-                      <p className="font-bold text-body">Reservation Error</p>
-                      <p className="text-red-300 mt-1 text-body-small">
+                <div className="mb-6 p-4 sm:p-5 md:p-6 bg-red-500/10 border border-red-500/30 rounded-xl">
+                  <div className="flex items-center gap-2 sm:gap-3 text-red-400">
+                    <AlertCircle className="h-5 w-5 md:h-6 md:w-6 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm sm:text-base">Reservation Error</p>
+                      <p className="text-red-300 mt-1 text-xs sm:text-sm break-words">
                         {availabilityError || (contactPhone ? `Something went wrong. Please try again or call us directly at ${contactPhone}.` : 'Something went wrong. Please try again later.')}
                       </p>
                     </div>
@@ -668,10 +652,11 @@ function ReservationsPageContent() {
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="space-y-5 md:space-y-6" noValidate>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
+              <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 md:space-y-6" noValidate>
+                {/* Name and Phone - Always in 2 columns on all screens */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-5">
                   <div>
-                    <Label htmlFor="customerName" className="text-body-small font-semibold mb-2 block">
+                    <Label htmlFor="customerName" className="text-xs sm:text-sm font-semibold mb-1.5 sm:mb-2 block">
                       Name *
                     </Label>
                     <Input
@@ -679,13 +664,13 @@ function ReservationsPageContent() {
                       required
                       value={formData.customerName}
                       onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
-                      className="h-11 md:h-12 text-body bg-[hsl(220,14%,18%)] border-red-500/20 text-gray-200 placeholder:text-gray-500 focus:border-red-500/40"
+                      className="h-10 sm:h-11 md:h-12 text-sm sm:text-base bg-[hsl(220,14%,18%)] border-red-500/20 text-gray-200 placeholder:text-gray-500 focus:border-red-500/40"
                       placeholder="Your full name"
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="customerPhone" className="text-body-small font-semibold mb-2 block">
+                    <Label htmlFor="customerPhone" className="text-xs sm:text-sm font-semibold mb-1.5 sm:mb-2 block">
                       Phone *
                     </Label>
                     <Input
@@ -694,14 +679,15 @@ function ReservationsPageContent() {
                       type="tel"
                       value={formData.customerPhone}
                       onChange={(e) => setFormData({ ...formData, customerPhone: e.target.value })}
-                      className="h-11 md:h-12 text-body bg-[hsl(220,14%,18%)] border-red-500/20 text-gray-200 placeholder:text-gray-500 focus:border-red-500/40"
+                      className="h-10 sm:h-11 md:h-12 text-sm sm:text-base bg-[hsl(220,14%,18%)] border-red-500/20 text-gray-200 placeholder:text-gray-500 focus:border-red-500/40"
                       placeholder="(321) 555-0123"
                     />
                   </div>
                 </div>
 
+                {/* Email - Full width */}
                 <div>
-                  <Label htmlFor="customerEmail" className="text-body-small font-semibold mb-2 block">
+                  <Label htmlFor="customerEmail" className="text-xs sm:text-sm font-semibold mb-1.5 sm:mb-2 block">
                     Email {requiresEmailVerification() ? '*' : ''}
                   </Label>
                   <Input
@@ -710,7 +696,7 @@ function ReservationsPageContent() {
                     required={requiresEmailVerification()}
                     value={formData.customerEmail}
                     onChange={(e) => setFormData({ ...formData, customerEmail: e.target.value })}
-                    className="h-11 md:h-12 text-body bg-[hsl(220,14%,18%)] border-red-500/20 text-gray-200 placeholder:text-gray-500 focus:border-red-500/40"
+                    className="h-10 sm:h-11 md:h-12 text-sm sm:text-base bg-[hsl(220,14%,18%)] border-red-500/20 text-gray-200 placeholder:text-gray-500 focus:border-red-500/40"
                     placeholder="your.email@example.com"
                   />
                   {requiresEmailVerification() && (
@@ -720,11 +706,12 @@ function ReservationsPageContent() {
                   )}
                 </div>
 
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
+                {/* Date, Time, Guests - 3 columns on desktop, stacked on mobile */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-5">
+                  {/* Date */}
                   <div>
-                    <Label htmlFor="reservationDate" className="text-body-small font-semibold mb-2 block flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-amber-400" />
+                    <Label htmlFor="reservationDate" className="text-xs sm:text-sm font-semibold mb-1.5 sm:mb-2 block flex items-center gap-1.5 sm:gap-2">
+                      <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-400" />
                       Date *
                     </Label>
                     <Input
@@ -741,118 +728,130 @@ function ReservationsPageContent() {
                           setFormData({ ...formData, reservationDate: '', reservationTime: '' })
                         }
                       }}
-                      className="h-12 text-base"
+                      className="h-10 sm:h-11 md:h-12 text-sm sm:text-base bg-[hsl(220,14%,18%)] border-red-500/20 text-gray-200 focus:border-red-500/40"
                       lang="en-US"
                     />
-                    <p className="text-xs text-gray-400 mt-1">
-                      Select a date using the calendar picker (Florida timezone)
-                    </p>
-                    {specialHoursInfo && (
-                      <p className="text-sm text-orange-600 mt-2 flex items-center gap-1">
-                        <Sparkles className="h-4 w-4" />
-                        <span>Special hours apply for this date</span>
-                      </p>
-                    )}
                   </div>
 
+                  {/* Time */}
                   <div>
-                    <Label htmlFor="reservationTime" className="text-base font-semibold mb-2 block flex items-center gap-2">
-                      <Clock className="h-5 w-5 bar-text-amber" />
+                    <Label htmlFor="reservationTime" className="text-xs sm:text-sm font-semibold mb-1.5 sm:mb-2 block flex items-center gap-1.5 sm:gap-2">
+                      <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-400" />
                       Time *
                     </Label>
                     {!formData.reservationDate ? (
-                      <div className="h-12 flex items-center justify-center border rounded-lg bg-gray-50">
-                        <span className="text-sm text-gray-500">Please select a date first</span>
+                      <div className="h-10 sm:h-11 md:h-12 flex items-center justify-center border rounded-lg bg-[hsl(220,14%,18%)] border-red-500/20">
+                        <span className="text-xs sm:text-sm text-gray-500">Select date first</span>
                       </div>
                     ) : loadingSlots ? (
-                      <div className="h-12 flex items-center justify-center border rounded-lg bg-gray-50">
-                        <span className="text-sm text-gray-500">Loading available times...</span>
+                      <div className="h-10 sm:h-11 md:h-12 flex items-center justify-center border rounded-lg bg-[hsl(220,14%,18%)] border-red-500/20">
+                        <span className="text-xs sm:text-sm text-gray-500">Loading...</span>
                       </div>
                     ) : availabilityError ? (
-                      <div className="h-12 flex items-center justify-center border-2 border-red-200 rounded-lg bg-red-50 dark:bg-red-900/20">
-                        <span className="text-sm text-red-600 dark:text-red-400 font-medium text-center px-2">
-                          {availabilityError}
+                      <div className="h-10 sm:h-11 md:h-12 flex items-center justify-center border-2 border-red-500/30 rounded-lg bg-red-500/10">
+                        <span className="text-xs sm:text-sm text-red-400 font-medium text-center px-2">
+                          Error
                         </span>
                       </div>
                     ) : availableSlots.length > 0 ? (
-                      <div>
-                        <select
-                          id="reservationTime"
-                          required
-                          value={formData.reservationTime}
-                          onChange={(e) => setFormData({ ...formData, reservationTime: e.target.value })}
-                          className="w-full h-12 rounded-lg border border-gray-300 px-4 text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-[#111111] text-white border-white/20"
-                        >
-                          <option value="">Select a time</option>
-                          {availableSlots.map((slot) => {
-                            // Check if this slot requires payment (special hours or event reservation price)
-                            const requiresSpecialHoursPayment = specialHoursInfo && isTimeSlotRequiringPrepayment(slot, specialHoursInfo)
-                            const requiresEventPayment = eventsOnDate.some(event => {
-                              if (event.reservation_price && event.reservation_price > 0) {
-                                const eventStart = typeof event.event_start === 'string' ? parseISO(event.event_start) : new Date(event.event_start)
-                                const eventStartFlorida = toFloridaTime(eventStart)
-                                const eventDateFlorida = eventStartFlorida.toISOString().split('T')[0]
-                                const eventTimeFlorida = `${String(eventStartFlorida.getHours()).padStart(2, '0')}:${String(eventStartFlorida.getMinutes()).padStart(2, '0')}`
-                                
-                                if (eventDateFlorida === formData.reservationDate) {
-                                  const [slotHour, slotMin] = slot.split(':').map(Number)
-                                  const [eventHour, eventMin] = eventTimeFlorida.split(':').map(Number)
-                                  const slotMinutes = slotHour * 60 + slotMin
-                                  const eventMinutes = eventHour * 60 + eventMin
-                                  return Math.abs(slotMinutes - eventMinutes) <= 30
-                                }
+                      <select
+                        id="reservationTime"
+                        required
+                        value={formData.reservationTime}
+                        onChange={(e) => setFormData({ ...formData, reservationTime: e.target.value })}
+                        className="w-full h-10 sm:h-11 md:h-12 rounded-lg border px-3 sm:px-4 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-transparent bg-[hsl(220,14%,18%)] text-white border-red-500/20"
+                      >
+                        <option value="">Select time</option>
+                        {availableSlots.map((slot) => {
+                          const requiresSpecialHoursPayment = specialHoursInfo && isTimeSlotRequiringPrepayment(slot, specialHoursInfo)
+                          const requiresEventPayment = eventsOnDate.some(event => {
+                            if (event.reservation_price && event.reservation_price > 0) {
+                              const eventStart = typeof event.event_start === 'string' ? parseISO(event.event_start) : new Date(event.event_start)
+                              const eventStartFlorida = toFloridaTime(eventStart)
+                              const eventDateFlorida = eventStartFlorida.toISOString().split('T')[0]
+                              const eventTimeFlorida = `${String(eventStartFlorida.getHours()).padStart(2, '0')}:${String(eventStartFlorida.getMinutes()).padStart(2, '0')}`
+                              
+                              if (eventDateFlorida === formData.reservationDate) {
+                                const [slotHour, slotMin] = slot.split(':').map(Number)
+                                const [eventHour, eventMin] = eventTimeFlorida.split(':').map(Number)
+                                const slotMinutes = slotHour * 60 + slotMin
+                                const eventMinutes = eventHour * 60 + eventMin
+                                return Math.abs(slotMinutes - eventMinutes) <= 30
                               }
-                              return false
-                            })
-                            const requiresPayment = requiresSpecialHoursPayment || requiresEventPayment
-                            return (
-                              <option key={slot} value={slot}>
-                                {formatTime(slot)}{requiresPayment ? ' (Prepayment Required)' : ''}
-                              </option>
-                            )
-                          })}
-                        </select>
-                        {specialHoursInfo && (
-                          <p className="text-xs text-gray-500 mt-1">
-                            {availableSlots.length} time slot{availableSlots.length !== 1 ? 's' : ''} available
-                            {specialHoursInfo.time_from && specialHoursInfo.time_to && (
-                              <span className="block mt-1 text-amber-400">
-                                <span className="font-semibold">Paid reservations:</span> {convert24To12(specialHoursInfo.time_from)} - {convert24To12(specialHoursInfo.time_to)} (includes 1-hour buffer before/after). <span className="text-blue-400">Free reservations available outside this window.</span>
-                              </span>
-                            )}
-                          </p>
-                        )}
-                        {!specialHoursInfo && regularHours && !regularHours.is_closed && (
-                          <p className="text-xs text-gray-500 mt-1">
-                            All reservations are free. No payment required.
-                          </p>
-                        )}
-                      </div>
+                            }
+                            return false
+                          })
+                          const requiresPayment = requiresSpecialHoursPayment || requiresEventPayment
+                          return (
+                            <option key={slot} value={slot}>
+                              {formatTime(slot)}{requiresPayment ? ' 💰' : ''}
+                            </option>
+                          )
+                        })}
+                      </select>
                     ) : (
-                      <div className="h-12 flex items-center justify-center border-2 border-red-200 rounded-lg bg-red-50">
-                        <span className="text-sm text-red-600 font-medium text-center px-2">
+                      <div className="h-10 sm:h-11 md:h-12 flex items-center justify-center border-2 border-red-500/30 rounded-lg bg-red-500/10">
+                        <span className="text-xs sm:text-sm text-red-400 font-medium text-center px-2">
                           {specialHoursInfo && !specialHoursInfo.is_open
-                            ? 'Restaurant is closed on this date'
+                            ? 'Closed'
                             : regularHours && regularHours.is_closed
-                            ? 'We are closed on this day'
-                            : specialHoursInfo && specialHoursInfo.is_open
-                            ? 'No time slots available. Please check special hours configuration in admin panel.'
-                            : 'No available time slots'}
+                            ? 'Closed'
+                            : 'No slots'}
                         </span>
                       </div>
                     )}
-                    {availabilityError && (
-                      <p className="text-sm text-red-600 mt-2 flex items-center gap-1">
-                        <AlertCircle className="h-4 w-4" />
-                        {availabilityError}
-                      </p>
-                    )}
+                  </div>
+
+                  {/* Guests */}
+                  <div>
+                    <Label htmlFor="guestsCount" className="text-xs sm:text-sm font-semibold mb-1.5 sm:mb-2 block flex items-center gap-1.5 sm:gap-2">
+                      <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-400" />
+                      Guests *
+                    </Label>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setFormData({
+                          ...formData,
+                          guestsCount: Math.max(1, formData.guestsCount - 1)
+                        })}
+                        className="h-10 sm:h-11 md:h-12 w-10 sm:w-11 md:w-12 text-lg sm:text-xl font-bold p-0"
+                      >
+                        −
+                      </Button>
+                      <Input
+                        id="guestsCount"
+                        type="number"
+                        min="1"
+                        max="12"
+                        required
+                        value={formData.guestsCount}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          guestsCount: parseInt(e.target.value) || 1
+                        })}
+                        className="h-10 sm:h-11 md:h-12 flex-1 text-center text-base sm:text-lg font-bold bg-[hsl(220,14%,18%)] border-red-500/20"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setFormData({
+                          ...formData,
+                          guestsCount: Math.min(12, formData.guestsCount + 1)
+                        })}
+                        className="h-10 sm:h-11 md:h-12 w-10 sm:w-11 md:w-12 text-lg sm:text-xl font-bold p-0"
+                      >
+                        +
+                      </Button>
+                    </div>
                   </div>
                 </div>
 
+                {/* Area - Full width */}
                 <div>
-                  <Label htmlFor="area" className="text-body-small font-semibold mb-2 block flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-amber-400" />
+                  <Label htmlFor="area" className="text-xs sm:text-sm font-semibold mb-1.5 sm:mb-2 block flex items-center gap-1.5 sm:gap-2">
+                    <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-400" />
                     Preferred Area *
                   </Label>
                   <select
@@ -860,7 +859,7 @@ function ReservationsPageContent() {
                     required
                     value={formData.area}
                     onChange={(e) => setFormData({ ...formData, area: e.target.value })}
-                    className="w-full h-12 rounded-lg border border-gray-300 px-4 text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-[#111111] text-white border-white/20"
+                    className="w-full h-10 sm:h-11 md:h-12 rounded-lg border px-3 sm:px-4 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-transparent bg-[hsl(220,14%,18%)] text-white border-red-500/20"
                   >
                     <option value="">Select an area</option>
                     <option value="Restaurant">Restaurant</option>
@@ -869,65 +868,13 @@ function ReservationsPageContent() {
                   </select>
                 </div>
 
-                <div>
-                  <Label htmlFor="guestsCount" className="text-base font-semibold mb-2 block flex items-center gap-2">
-                    <Users className="h-5 w-5 bar-text-amber" />
-                    Number of Guests *
-                  </Label>
-                  <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setFormData({
-                        ...formData,
-                        guestsCount: Math.max(1, formData.guestsCount - 1)
-                      })}
-                      className="min-h-[44px] min-w-[44px] sm:h-12 sm:w-12 text-xl font-bold touch-manipulation"
-                    >
-                      −
-                    </Button>
-                    <Input
-                      id="guestsCount"
-                      type="number"
-                      min="1"
-                      max="12"
-                      required
-                      value={formData.guestsCount}
-                      onChange={(e) => setFormData({
-                        ...formData,
-                        guestsCount: parseInt(e.target.value) || 1
-                      })}
-                      className="h-12 w-20 sm:w-24 text-center text-lg sm:text-xl font-bold"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setFormData({
-                        ...formData,
-                        guestsCount: Math.min(12, formData.guestsCount + 1)
-                      })}
-                      className="min-h-[44px] min-w-[44px] sm:h-12 sm:w-12 text-xl font-bold touch-manipulation"
-                    >
-                      +
-                    </Button>
-                    <span className="text-xs sm:text-sm bar-text-muted w-full sm:w-auto">(Max 12 guests)</span>
-                  </div>
-                  {specialHoursInfo?.special_hours_limits?.[0]?.max_guests_per_booking && 
-                   formData.reservationTime &&
-                   isTimeWithinSpecialHours(formData.reservationTime, specialHoursInfo) && (
-                    <p className="text-sm text-orange-600 mt-2">
-                      Maximum {specialHoursInfo.special_hours_limits[0].max_guests_per_booking} guests per booking for this event
-                    </p>
-                  )}
-                </div>
-
-                {/* Custom Fields from Special Hours - Only show if time is within special hours range */}
+                {/* Custom Fields from Special Hours */}
                 {specialHoursInfo?.special_hours_fields && 
                  formData.reservationTime &&
                  isTimeWithinSpecialHours(formData.reservationTime, specialHoursInfo) &&
                  specialHoursInfo.special_hours_fields.map((field: any) => (
                   <div key={field.id}>
-                    <Label htmlFor={field.field_key} className="text-base font-semibold mb-2 block">
+                    <Label htmlFor={field.field_key} className="text-xs sm:text-sm font-semibold mb-1.5 sm:mb-2 block">
                       {field.field_label} {field.is_required && '*'}
                     </Label>
                     {field.field_type === 'textarea' ? (
@@ -939,7 +886,7 @@ function ReservationsPageContent() {
                         onChange={(e) =>
                           setCustomFields({ ...customFields, [field.field_key]: e.target.value })
                         }
-                        className="text-base"
+                        className="text-sm sm:text-base bg-[hsl(220,14%,18%)] border-red-500/20 text-gray-200"
                         placeholder={field.field_label}
                       />
                     ) : field.field_type === 'select' ? (
@@ -950,7 +897,7 @@ function ReservationsPageContent() {
                         onChange={(e) =>
                           setCustomFields({ ...customFields, [field.field_key]: e.target.value })
                         }
-                        className="w-full h-12 rounded-lg border border-gray-300 px-4 text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                        className="w-full h-10 sm:h-11 md:h-12 rounded-lg border px-3 sm:px-4 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-amber-500/50 bg-[hsl(220,14%,18%)] text-white border-red-500/20"
                       >
                         <option value="">Select {field.field_label}</option>
                         {field.field_options?.map((option: string) => (
@@ -968,15 +915,16 @@ function ReservationsPageContent() {
                         onChange={(e) =>
                           setCustomFields({ ...customFields, [field.field_key]: e.target.value })
                         }
-                        className="h-12 text-base"
+                        className="h-10 sm:h-11 md:h-12 text-sm sm:text-base bg-[hsl(220,14%,18%)] border-red-500/20 text-gray-200"
                         placeholder={field.field_label}
                       />
                     )}
                   </div>
                 ))}
 
+                {/* Notes - Full width */}
                 <div>
-                  <Label htmlFor="notes" className="text-base font-semibold mb-2 block">
+                  <Label htmlFor="notes" className="text-xs sm:text-sm font-semibold mb-1.5 sm:mb-2 block">
                     Special Requests or Notes
                   </Label>
                   <Textarea
@@ -984,39 +932,39 @@ function ReservationsPageContent() {
                     rows={4}
                     value={formData.notes}
                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    className="text-base"
+                    className="text-sm sm:text-base bg-[hsl(220,14%,18%)] border-red-500/20 text-gray-200"
                     placeholder="Any dietary restrictions, special occasions, or preferences..."
                   />
                 </div>
 
-                {/* Special Hours Payment Info - Only show if time is within special hours range */}
+                {/* Special Hours Payment Info */}
                 {specialHoursInfo?.special_hours_payment?.[0]?.prepayment_required && 
                  formData.reservationTime &&
                  isTimeWithinSpecialHours(formData.reservationTime, specialHoursInfo) && (
-                  <div className="p-6 bg-gradient-to-r from-yellow-50 to-amber-50 border-2 border-yellow-200 rounded-2xl">
-                    <div className="flex items-start gap-3">
-                      <AlertCircle className="h-6 w-6 text-yellow-600 mt-0.5" />
-                      <div>
-                        <p className="font-bold text-yellow-900 mb-1">Prepayment Required</p>
-                        <p className="text-sm text-yellow-800">
+                  <div className="p-4 sm:p-5 md:p-6 bg-gradient-to-r from-yellow-50/10 to-amber-50/10 border-2 border-yellow-500/30 rounded-xl sm:rounded-2xl">
+                    <div className="flex items-start gap-2 sm:gap-3">
+                      <AlertCircle className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-400 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-yellow-400 mb-1 text-sm sm:text-base">Prepayment Required</p>
+                        <p className="text-xs sm:text-sm text-yellow-300/90">
                           {specialHoursInfo.special_hours_payment[0].prepayment_rule_type === 'percentage'
                             ? `${specialHoursInfo.special_hours_payment[0].prepayment_percentage}% prepayment required`
                             : specialHoursInfo.special_hours_payment[0].prepayment_rule_type === 'per_guest'
-                            ? `$${specialHoursInfo.special_hours_payment[0].prepayment_amount} per guest prepayment required`
-                            : `$${specialHoursInfo.special_hours_payment[0].prepayment_amount} prepayment required`}
+                            ? `${specialHoursInfo.special_hours_payment[0].prepayment_amount} per guest prepayment required`
+                            : `${specialHoursInfo.special_hours_payment[0].prepayment_amount} prepayment required`}
                         </p>
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* Cancellation Policy - Only show if time is within special hours range */}
+                {/* Cancellation Policy */}
                 {specialHoursInfo?.special_hours_payment?.[0]?.cancellation_policy && 
                  formData.reservationTime &&
                  isTimeWithinSpecialHours(formData.reservationTime, specialHoursInfo) && (
-                  <div className="p-4 bg-blue-50/50 border border-blue-200/50 rounded-xl">
-                    <p className="text-sm font-semibold text-blue-900 mb-1">Cancellation Policy</p>
-                    <p className="text-sm text-blue-800">
+                  <div className="p-3 sm:p-4 bg-blue-500/5 border border-blue-500/20 rounded-lg sm:rounded-xl">
+                    <p className="text-xs sm:text-sm font-semibold text-blue-400 mb-1">Cancellation Policy</p>
+                    <p className="text-xs sm:text-sm text-blue-300/90">
                       {specialHoursInfo.special_hours_payment[0].cancellation_policy_custom ||
                         `Cancellation policy: ${specialHoursInfo.special_hours_payment[0].cancellation_policy}`}
                       {specialHoursInfo.special_hours_payment[0].cancellation_hours_before &&
@@ -1025,10 +973,11 @@ function ReservationsPageContent() {
                   </div>
                 )}
 
+                {/* Submit Button */}
                 <Button
                   type="submit"
                   disabled={isSubmitting || loadingSlots || (availableSlots.length === 0 && !!formData.reservationDate)}
-                  className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-xl hover:shadow-2xl transform hover:scale-[1.02] transition-all font-bold text-base sm:text-lg min-h-[48px] sm:py-7 rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+                  className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-xl hover:shadow-2xl transform hover:scale-[1.02] transition-all font-bold text-sm sm:text-base md:text-lg h-12 sm:h-14 md:h-16 rounded-xl sm:rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? (
                     <>
@@ -1037,7 +986,7 @@ function ReservationsPageContent() {
                     </>
                   ) : (
                     <>
-                      <CheckCircle className="mr-2 h-5 w-5 inline" />
+                      <CheckCircle className="mr-2 h-4 w-4 sm:h-5 sm:w-5 inline" />
                       Submit Reservation
                     </>
                   )}
@@ -1049,24 +998,24 @@ function ReservationsPageContent() {
 
         {/* Info Card */}
         <AnimatedSection direction="up" delay={200}>
-          <Card className="bar-card mt-8 border-2 border-orange-200/30">
-            <CardContent className="p-6">
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <Clock className="h-5 w-5 bar-text-amber mt-0.5" />
-                  <div>
-                    <p className="font-semibold bar-text-gold">Reservation Policy</p>
-                    <p className="text-sm bar-text-muted">
+          <Card className="bar-card mt-6 sm:mt-8 border-2 border-amber-500/20">
+            <CardContent className="p-4 sm:p-6">
+              <div className="space-y-3 sm:space-y-4">
+                <div className="flex items-start gap-2 sm:gap-3">
+                  <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-amber-400 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-amber-400 text-sm sm:text-base">Reservation Policy</p>
+                    <p className="text-xs sm:text-sm bar-text-muted">
                       Reservations are held for 15 minutes past the scheduled time. 
                       Please call if you're running late.
                     </p>
                   </div>
                 </div>
-                <div className="flex items-start gap-3">
-                  <Users className="h-5 w-5 bar-text-amber mt-0.5" />
-                  <div>
-                    <p className="font-semibold bar-text-gold">Large Parties</p>
-                    <p className="text-sm bar-text-muted">
+                <div className="flex items-start gap-2 sm:gap-3">
+                  <Users className="h-4 w-4 sm:h-5 sm:w-5 text-amber-400 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-amber-400 text-sm sm:text-base">Large Parties</p>
+                    <p className="text-xs sm:text-sm bar-text-muted break-words">
                       {contactPhone ? `For parties of 8 or more, please call us directly at ${contactPhone}` : 'For parties of 8 or more, please contact us directly'} 
                       to ensure we can accommodate your group.
                     </p>
@@ -1086,8 +1035,8 @@ export default function ReservationsPage() {
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading reservation form...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500 mx-auto mb-4"></div>
+          <p className="text-gray-400 text-sm sm:text-base">Loading reservation form...</p>
         </div>
       </div>
     }>
@@ -1095,4 +1044,3 @@ export default function ReservationsPage() {
     </Suspense>
   )
 }
-

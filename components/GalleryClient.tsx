@@ -1,8 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { X } from 'lucide-react'
-import { getGalleryImages } from '@/lib/queries'
 import SupabaseImage from '@/components/SupabaseImage'
 
 interface GalleryClientProps {
@@ -11,11 +10,9 @@ interface GalleryClientProps {
 
 export default function GalleryClient({ initialImages }: GalleryClientProps) {
   const [selectedImage, setSelectedImage] = useState<number | null>(null)
-  const [images, setImages] = useState<any[]>(initialImages)
-  const [loading, setLoading] = useState(false)
 
   const categories = ['all', 'food', 'ambience', 'events', 'parties', 'other']
-  
+
   const categoryLabels: Record<string, string> = {
     all: 'All',
     food: 'Food',
@@ -26,29 +23,9 @@ export default function GalleryClient({ initialImages }: GalleryClientProps) {
   }
   const [activeCategory, setActiveCategory] = useState('all')
 
-  useEffect(() => {
-    async function loadImages() {
-      if (activeCategory === 'all') {
-        setImages(initialImages)
-        return
-      }
-
-      setLoading(true)
-      try {
-        const data = await getGalleryImages(activeCategory)
-        setImages(data)
-      } catch (error) {
-        console.error('Error loading images:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-    loadImages()
-  }, [activeCategory, initialImages])
-
-  const filteredImages = activeCategory === 'all' 
-    ? images 
-    : images.filter(img => img.category === activeCategory)
+  const filteredImages = activeCategory === 'all'
+    ? initialImages
+    : initialImages.filter(img => img.category === activeCategory)
 
   return (
     <div className="section-bg-primary section-spacing">
@@ -67,11 +44,10 @@ export default function GalleryClient({ initialImages }: GalleryClientProps) {
             <button
               key={category}
               onClick={() => setActiveCategory(category)}
-              className={`px-4 py-2 rounded-lg text-xs md:text-sm font-semibold transition-all ${
-                activeCategory === category 
-                  ? 'bg-[#F59E0B] text-black' 
-                  : 'bg-[#111111] border border-white/10 text-[#D1D5DB] hover:bg-[#F59E0B]/10 hover:border-[#F59E0B]/40 hover:text-[#F59E0B]'
-              }`}
+              className={`px-4 py-2 rounded-lg text-xs md:text-sm font-semibold transition-all ${activeCategory === category
+                ? 'bg-[#F59E0B] text-black'
+                : 'bg-[#111111] border border-white/10 text-[#D1D5DB] hover:bg-[#F59E0B]/10 hover:border-[#F59E0B]/40 hover:text-[#F59E0B]'
+                }`}
             >
               {categoryLabels[category] || category.charAt(0).toUpperCase() + category.slice(1)}
             </button>
@@ -79,11 +55,7 @@ export default function GalleryClient({ initialImages }: GalleryClientProps) {
         </div>
 
         {/* Image Grid */}
-        {loading ? (
-          <div className="text-center py-12 md:py-16 lg:py-20">
-            <p className="body-text text-sm md:text-base">Loading gallery...</p>
-          </div>
-        ) : filteredImages.length > 0 ? (
+        {filteredImages.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-3 lg:gap-4">
             {filteredImages.map((image, index) => (
               <div
