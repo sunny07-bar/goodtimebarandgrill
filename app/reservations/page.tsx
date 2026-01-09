@@ -244,36 +244,26 @@ function ReservationsPageContent() {
   }
 
   // Check if email is already verified (from database or localStorage)
+  // Check if email is already verified (from database or localStorage)
+  // Debounce the check to avoid excessive API calls
   useEffect(() => {
-    const checkEmailVerification = async () => {
-      if (!formData.customerEmail) {
-        setEmailVerified(false)
-        return
-      }
+    // Check if verification is actually needed for this reservation
+    // If it's a free reservation (no payment required), we don't need to verify email
+    if (!requiresEmailVerification()) {
+      // If switching from paid to free, we might want to clear verification status or just ignore it
+      // But we definitely don't need to call the API
+      return
+    }
 
-      // First check database
-      try {
-        const response = await fetch('/api/email/check-verified', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: formData.customerEmail }),
-        })
+    // Only check if we have a potentially valid email
+    if (!formData.customerEmail || !formData.customerEmail.includes('@') || formData.customerEmail.length < 5) {
+      setEmailVerified(false)
+      return
+    }
 
-        const data = await response.json()
-        if (data.verified) {
-          setEmailVerified(true)
-          // Also store in localStorage for faster subsequent checks
-          if (typeof window !== 'undefined') {
-            const verificationKey = `email_verified_${formData.customerEmail.toLowerCase()}`
-            localStorage.setItem(verificationKey, Date.now().toString())
-          }
-          return
-        }
-      } catch (err) {
-        console.error('Error checking email verification:', err)
-      }
-
-      // Fallback to localStorage check
+    // Define the check function
+    const checkEmail = async () => {
+      // First check local storage (fastest)
       if (typeof window !== 'undefined') {
         const verificationKey = `email_verified_${formData.customerEmail.toLowerCase()}`
         const storedVerification = localStorage.getItem(verificationKey)
@@ -284,16 +274,48 @@ function ReservationsPageContent() {
             setEmailVerified(true)
             return
           } else {
-            // Expired, remove it
+            // Expired
             localStorage.removeItem(verificationKey)
           }
         }
       }
 
+      // Then check database
+      try {
+        const response = await fetch('/api/email/check-verified', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: formData.customerEmail }),
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          if (data.verified) {
+            setEmailVerified(true)
+            // Store in localStorage
+            if (typeof window !== 'undefined') {
+              const verificationKey = `email_verified_${formData.customerEmail.toLowerCase()}`
+              localStorage.setItem(verificationKey, Date.now().toString())
+            }
+            return
+          }
+        }
+      } catch (err) {
+        console.error('Error checking email verification:', err)
+      }
+
       setEmailVerified(false)
     }
 
-    checkEmailVerification()
+    // processingRef to prevent race conditions or multiple checks
+    const timeoutId = setTimeout(() => {
+      checkEmail()
+    }, 800) // 800ms debounce
+
+    return () => clearTimeout(timeoutId)
+    // We need to re-run this if:
+    // 1. Email changes (obviously)
+    // 2. Reservation details change (might switch from free to paid)
   }, [formData.customerEmail, formData.reservationTime, formData.reservationDate, specialHoursInfo, eventsOnDate])
 
   const handleEmailVerified = () => {

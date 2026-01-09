@@ -306,6 +306,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Send confirmation email for standard (non-prepaid) reservations
+    if (!prepaymentAmount && data?.id && customerEmail) {
+      // Fire and forget - don't block response
+      const { sendReservationConfirmationEmail } = require('@/lib/email/reservation-confirmation');
+      sendReservationConfirmationEmail(data.id).catch((err: any) =>
+        console.error('Failed to send initial confirmation email:', err)
+      );
+    }
+
     return NextResponse.json(
       {
         success: true,

@@ -1,8 +1,8 @@
-// Stripe Webhook Handler
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import { supabase } from '@/lib/db';
 import { headers } from 'next/headers';
+import { sendReservationConfirmationEmail } from '@/lib/email/reservation-confirmation';
 
 // Force dynamic rendering for webhook
 export const dynamic = 'force-dynamic';
@@ -54,12 +54,12 @@ export async function POST(request: NextRequest) {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as any;
-        
+
         // Handle successful payment
         if (session.payment_status === 'paid') {
           const metadata = session.metadata || {};
           const type = metadata.type;
-          
+
           if (type === 'ticket' && metadata.orderId) {
             // Complete ticket purchase (webhook is reliable in production)
             // For webhooks, we must use environment variable (webhooks come from Stripe, not user's browser)
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
               console.error('[Webhook] NEXT_PUBLIC_SITE_URL or NEXT_PUBLIC_BASE_URL must be set for webhook to work');
               return NextResponse.json({ received: true }, { status: 200 }); // Return 200 to Stripe even if we can't process
             }
-            
+
             try {
               const cleanSiteUrl = siteUrl.replace(/\/$/, '')
               const completeResponse = await fetch(`${cleanSiteUrl}/api/tickets/complete-purchase`, {
@@ -131,22 +131,11 @@ export async function POST(request: NextRequest) {
                 console.error(`[Webhook] Error updating reservation ${metadata.reservationId}:`, updateError);
               } else {
                 console.log(`[Webhook] Successfully updated reservation ${metadata.reservationId}`);
-                
+
                 // Send confirmation email after payment
                 try {
-                  // For webhooks, we must use environment variable
-                  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_BASE_URL
-                  if (siteUrl) {
-                    const cleanSiteUrl = siteUrl.replace(/\/$/, '')
-                    await fetch(`${cleanSiteUrl}/api/reservations/send-confirmation`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ reservationId: metadata.reservationId }),
-                    }).catch(err => {
-                      console.error(`[Webhook] Failed to send confirmation email for reservation ${metadata.reservationId}:`, err);
-                      // Don't fail webhook if email fails
-                    });
-                  }
+                  console.log(`[Webhook] Sending confirmation email for reservation ${metadata.reservationId}`);
+                  await sendReservationConfirmationEmail(metadata.reservationId);
                 } catch (err) {
                   console.error(`[Webhook] Error sending confirmation email for reservation ${metadata.reservationId}:`, err);
                   // Continue even if email fails
