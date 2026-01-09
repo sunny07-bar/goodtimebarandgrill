@@ -315,11 +315,17 @@ export async function POST(request: NextRequest) {
 
     if (!prepaymentAmount && data?.id && customerEmail) {
       console.log('[API] Attempting to send confirmation email for reservation:', data.id);
-      // Fire and forget - don't block response
-      const { sendReservationConfirmationEmail } = require('@/lib/email/reservation-confirmation');
-      sendReservationConfirmationEmail(data.id)
-        .then((res: any) => console.log('[API] Email send result:', res))
-        .catch((err: any) => console.error('[API] Failed to send initial confirmation email:', err));
+
+      // CRITICAL: We MUST await this in Next.js Serverless environment (Vercel)
+      // otherwise the function execution freezes immediately after return response is sent
+      try {
+        const { sendReservationConfirmationEmail } = require('@/lib/email/reservation-confirmation');
+        const emailResult = await sendReservationConfirmationEmail(data.id);
+        console.log('[API] Email send result:', emailResult);
+      } catch (err) {
+        console.error('[API] Failed to send initial confirmation email:', err);
+        // We don't fail the request because the reservation IS created
+      }
     } else {
       console.log('[API] Skipping email trigger. Conditions not met.');
     }

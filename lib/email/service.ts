@@ -8,7 +8,7 @@ function createTransport() {
   const isOffice365 = host.includes('office365.com') || host.includes('outlook.com');
   const isGmail = host.includes('gmail.com');
   const isHostinger = host.includes('hostinger.com') || host.includes('hpanel.net') || host.includes('titan.email');
-  
+
   // Determine if SMTP_USER is a full email or just username
   const smtpUser = process.env.SMTP_USER || '';
   const smtpPassword = process.env.SMTP_PASSWORD || '';
@@ -27,13 +27,13 @@ function createTransport() {
     // Trim credentials first (important for authentication)
     const trimmedUser = smtpUser.trim();
     const trimmedPassword = smtpPassword.trim();
-    
+
     // Update auth with trimmed values
     config.auth = {
       user: trimmedUser,
       pass: trimmedPassword,
     };
-    
+
     // Hostinger uses port 587 with STARTTLS (TLS) or port 465 with SSL
     if (port === 587) {
       // Port 587 with STARTTLS (TLS encryption)
@@ -57,7 +57,7 @@ function createTransport() {
     config.connectionTimeout = 30000; // 30 seconds
     config.greetingTimeout = 30000; // 30 seconds
     config.socketTimeout = 30000; // 30 seconds
-    
+
     // Hostinger/Titan requires full email as username
     if (trimmedUser && !trimmedUser.includes('@')) {
       console.warn('[Email] Hostinger/Titan Email typically requires full email address as SMTP_USER');
@@ -125,20 +125,20 @@ function isHostingerProvider(): boolean {
 function getTransport(): nodemailer.Transporter {
   const currentHash = getConfigHash();
   const isHostinger = isHostingerProvider();
-  
+
   // For Hostinger, always create a fresh transporter (don't cache)
   // This prevents authentication issues that can occur with cached connections
   if (isHostinger) {
     console.log('[Email] Creating fresh transporter for Hostinger (caching disabled)');
     return createTransport();
   }
-  
+
   // For other providers, use caching
   // Reuse cached transporter if config hasn't changed
   if (cachedTransport && lastConfigHash === currentHash) {
     return cachedTransport;
   }
-  
+
   // Create new transporter if config changed or first time
   cachedTransport = createTransport();
   lastConfigHash = currentHash;
@@ -167,7 +167,7 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
     // Get raw environment variables (before trimming)
     const rawSmtpUser = process.env.SMTP_USER;
     const rawSmtpPassword = process.env.SMTP_PASSWORD;
-    
+
     if (!rawSmtpUser || !rawSmtpPassword) {
       const errorMsg = 'SMTP credentials not configured. Please set SMTP_USER and SMTP_PASSWORD in .env.local';
       console.error('[Email]', errorMsg);
@@ -178,19 +178,19 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
     // Default to port 465 for Hostinger (tested and working), otherwise 587
     const defaultPort = (smtpHost.includes('hostinger.com') || smtpHost.includes('hpanel.net') || smtpHost.includes('titan.email')) ? '465' : '587';
     const smtpPort = process.env.SMTP_PORT || defaultPort;
-    
+
     // Trim credentials (important for Hostinger)
     const smtpUser = rawSmtpUser.trim();
     const smtpPassword = rawSmtpPassword.trim();
-    
+
     // Debug: Check for common issues
     if (smtpUser !== rawSmtpUser || smtpPassword !== rawSmtpPassword) {
       console.log('[Email] ⚠️ Credentials had whitespace - trimmed');
     }
-    
+
     // Determine from email - prefer SMTP_FROM, fallback to SMTP_USER (might be full email)
     let fromEmail = options.from || process.env.SMTP_FROM;
-    
+
     // Clean up malformed SMTP_FROM (handle format like 'Name" <email>' or '"email"')
     if (fromEmail) {
       // Extract email from format "Name" <email@domain.com>
@@ -203,21 +203,21 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
       // Remove any remaining quotes
       fromEmail = fromEmail.replace(/^["']|["']$/g, '').trim();
     }
-    
+
     if (!fromEmail) {
       // If SMTP_USER is a full email, use it; otherwise construct from domain
       if (smtpUser.includes('@')) {
         fromEmail = smtpUser;
       } else {
         // Try to extract domain from SMTP_HOST or use a default
-        const domain = smtpHost.includes('.') 
-          ? smtpHost.split('.').slice(-2).join('.') 
+        const domain = smtpHost.includes('.')
+          ? smtpHost.split('.').slice(-2).join('.')
           : 'example.com';
         fromEmail = `${smtpUser}@${domain}`;
       }
     }
     const fromName = process.env.SMTP_FROM_NAME || 'Good Times Bar & Grill';
-    
+
     // Reduced logging for performance (only log first email or errors)
     if (!connectionVerified) {
       console.log(`[Email] Attempting to send email to ${options.to} via ${smtpHost}:${smtpPort}`);
@@ -233,8 +233,14 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
     // so we'll attempt sending even if verify fails, and catch errors during actual send
     let verificationFailed = false;
     let verificationError: any = null;
-    
-    if (!connectionVerified) {
+
+    // SKIP verification on Vercel/Production to prevent timeouts
+    // Verify is expensive and prone to timeouts on serverless functions
+    const isVercel = process.env.VERCEL === '1';
+    const isProduction = process.env.NODE_ENV === 'production';
+    const shouldVerify = !connectionVerified && !isVercel && !isProduction;
+
+    if (shouldVerify) {
       try {
         await transporter.verify();
         connectionVerified = true;
@@ -247,6 +253,8 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
         console.warn('[Email] ⚠️ SMTP verification failed, but attempting to send anyway:', verifyError.message);
         console.warn('[Email]   (Some SMTP servers have issues with verify() but still allow sending)');
       }
+    } else if (!connectionVerified) {
+      console.log('[Email] ℹ️ Skipping SMTP verification in production to prevent timeouts');
     }
 
     try {
@@ -279,15 +287,15 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
         cachedTransport = null;
       }
       connectionVerified = false;
-      
+
       // If verification also failed, combine error messages
       if (verificationFailed && sendError.code === 'EAUTH') {
         let errorMsg = `SMTP authentication failed: ${sendError.message || 'Unable to authenticate with email server'}`;
-        
+
         // Provide helpful guidance based on error
         if (sendError.message?.includes('Authentication Failed') || sendError.message?.includes('535')) {
-            const isHostinger = (process.env.SMTP_HOST || '').includes('hostinger.com') || (process.env.SMTP_HOST || '').includes('hpanel.net') || (process.env.SMTP_HOST || '').includes('titan.email');
-          
+          const isHostinger = (process.env.SMTP_HOST || '').includes('hostinger.com') || (process.env.SMTP_HOST || '').includes('hpanel.net') || (process.env.SMTP_HOST || '').includes('titan.email');
+
           if (isHostinger) {
             errorMsg += '\n\nTroubleshooting tips:';
             errorMsg += '\n1. ✅ Hostinger requires full email address as SMTP_USER (e.g., support@goodtimesbarandgrill.com)';
@@ -304,7 +312,7 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
             errorMsg += '\n4. Try SMTP_PORT 587 (STARTTLS) or 465 (SSL)';
           }
         }
-        
+
         console.error('[Email] ✗', errorMsg);
         console.error('[Email] Connection details:', {
           host: smtpHost,
@@ -315,13 +323,13 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
         });
         return { success: false, error: errorMsg };
       }
-      
+
       // Re-throw other errors to be handled by outer catch
       throw sendError;
     }
   } catch (error: any) {
     let errorMessage = 'Failed to send email';
-    
+
     // Provide more specific error messages
     if (error.code === 'EAUTH') {
       errorMessage = 'SMTP authentication failed. Please check your email credentials.';
@@ -334,7 +342,7 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
     } else if (error.message) {
       errorMessage = `Email error: ${error.message}`;
     }
-    
+
     console.error('[Email] ✗ Error sending email:', {
       message: error.message,
       code: error.code,
@@ -343,7 +351,7 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
       command: error.command,
       stack: error.stack,
     });
-    
+
     return { success: false, error: errorMessage };
   }
 }
