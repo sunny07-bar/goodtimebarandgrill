@@ -307,12 +307,21 @@ export async function POST(request: NextRequest) {
     }
 
     // Send confirmation email for standard (non-prepaid) reservations
+    console.log('[API] Checking if email should be sent for free reservation:', {
+      prepaymentAmount,
+      id: data?.id,
+      email: customerEmail
+    });
+
     if (!prepaymentAmount && data?.id && customerEmail) {
+      console.log('[API] Attempting to send confirmation email for reservation:', data.id);
       // Fire and forget - don't block response
       const { sendReservationConfirmationEmail } = require('@/lib/email/reservation-confirmation');
-      sendReservationConfirmationEmail(data.id).catch((err: any) =>
-        console.error('Failed to send initial confirmation email:', err)
-      );
+      sendReservationConfirmationEmail(data.id)
+        .then((res: any) => console.log('[API] Email send result:', res))
+        .catch((err: any) => console.error('[API] Failed to send initial confirmation email:', err));
+    } else {
+      console.log('[API] Skipping email trigger. Conditions not met.');
     }
 
     return NextResponse.json(
