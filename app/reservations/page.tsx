@@ -1015,7 +1015,7 @@ function ReservationsPageContent() {
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-amber-400 text-sm sm:text-base">Large Parties</p>
                     <p className="text-xs sm:text-sm bar-text-muted break-words">
-                      {contactPhone ? `For parties of 8 or more, please call us directly at ${contactPhone}` : 'For parties of 8 or more, please contact us directly'}
+                      {contactPhone ? `For parties of 12 or more, please call us directly at ${contactPhone}` : 'For parties of 12 or more, please contact us directly'}
                       to ensure we can accommodate your group.
                     </p>
                   </div>
