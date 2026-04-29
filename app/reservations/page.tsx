@@ -998,31 +998,52 @@ function ReservationsPageContent() {
         {/* Info Card */}
         <AnimatedSection direction="up" delay={200}>
           <Card className="bar-card mt-6 sm:mt-8 border-2 border-amber-500/20">
-            <CardContent className="p-4 sm:p-6">
-              <div className="space-y-3 sm:space-y-4">
-                <div className="flex items-start gap-2 sm:gap-3">
-                  <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-amber-400 mt-0.5 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-amber-400 text-sm sm:text-base">Reservation Policy</p>
-                    <p className="text-xs sm:text-sm bar-text-muted">
-                      Reservations are held for 15 minutes past the scheduled time.
-                      Please call if you're running late.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2 sm:gap-3">
-                  <Users className="h-4 w-4 sm:h-5 sm:w-5 text-amber-400 mt-0.5 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-amber-400 text-sm sm:text-base">Large Parties</p>
-                    <p className="text-xs sm:text-sm bar-text-muted break-words">
-                      {contactPhone ? `For parties of 12 or more, please call us directly at ${contactPhone}` : 'For parties of 12 or more, please contact us directly'}
-                      to ensure we can accommodate your group.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+  <CardContent className="p-4 sm:p-6">
+    <div className="space-y-3 sm:space-y-4">
+      
+      <div className="flex items-start gap-2 sm:gap-3">
+        <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-amber-400 mt-0.5 flex-shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-amber-400 text-sm sm:text-base">
+            Reservation Policy
+          </p>
+          <p className="text-xs sm:text-sm bar-text-muted">
+            Reservations are held for 15 minutes past the scheduled time.
+            Please call if you're running late.
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-start gap-2 sm:gap-3">
+        <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-amber-400 mt-0.5 flex-shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-amber-400 text-sm sm:text-base">
+            Minimum Spend
+          </p>
+          <p className="text-xs sm:text-sm bar-text-muted">
+            A $30 minimum spend per table is required for all reservations.
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-start gap-2 sm:gap-3">
+        <Users className="h-4 w-4 sm:h-5 sm:w-5 text-amber-400 mt-0.5 flex-shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-amber-400 text-sm sm:text-base">
+            Large Parties
+          </p>
+          <p className="text-xs sm:text-sm bar-text-muted break-words">
+            {contactPhone
+              ? `For parties of 12 or more, please call us directly at ${contactPhone}`
+              : "For parties of 12 or more, please contact us directly"}{" "}
+            to ensure we can accommodate your group.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </CardContent>
+</Card>
         </AnimatedSection>
       </div>
     </div>
