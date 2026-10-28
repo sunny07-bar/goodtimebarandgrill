@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/db'
+import { calculateTicketPromotions } from '@/lib/utils/promotions'
 
 // Helper to generate order number if function doesn't exist
 async function generateOrderNumber(): Promise<string> {
@@ -24,6 +25,7 @@ export async function POST(request: NextRequest) {
       customerName,
       customerEmail,
       customerPhone,
+      promoCode,
     } = body
 
     // Validate required fields
@@ -121,6 +123,41 @@ export async function POST(request: NextRequest) {
       ticketValidations.push({ ticketType, quantity: ticketItem.quantity })
     }
 
+    // =========================================================================
+    // PROMOTIONS & BOGO CALCULATION
+    // =========================================================================
+    let subtotalAmount = totalAmount
+    let discountAmount = 0
+    let finalTotal = totalAmount
+    let appliedPromotion = null
+    let ticketBreakdown: any[] = []
+
+    try {
+      const { data: promotions } = await supabase
+        .from('event_promotions')
+        .select('*')
+        .eq('event_id', eventId)
+        .eq('is_active', true)
+
+      if (promotions && promotions.length > 0) {
+        const cartItems = ticketValidations.map(v => ({
+          ticketTypeId: v.ticketType.id,
+          name: v.ticketType.name,
+          price: parseFloat(v.ticketType.price.toString()),
+          quantity: v.quantity,
+        }))
+
+        const calc = calculateTicketPromotions(cartItems, promotions, promoCode)
+        subtotalAmount = calc.subtotal
+        discountAmount = calc.discountAmount
+        finalTotal = calc.finalTotal
+        appliedPromotion = calc.appliedPromotion
+        ticketBreakdown = calc.ticketBreakdown
+      }
+    } catch (promoErr) {
+      console.warn('Could not evaluate promotions (migration may not have run):', promoErr)
+    }
+
     // Generate order number
     let orderNumber: string
     try {
@@ -134,31 +171,58 @@ export async function POST(request: NextRequest) {
       orderNumber = await generateOrderNumber()
     }
 
-    // Store ticket selection for later use after payment
-    const ticketSelection = ticketValidations.map(v => ({
-      ticketTypeId: v.ticketType.id === 'base' ? 'base' : v.ticketType.id,
-      quantity: v.quantity,
-      price: parseFloat(v.ticketType.price.toString()),
-      name: v.ticketType.name,
-    }))
+    // Store ticket selection with individual discounted prices for later use after payment
+    const ticketSelection = ticketValidations.map(v => {
+      const matchingBreakdown = ticketBreakdown.filter(t => t.ticketTypeId === v.ticketType.id)
+      return {
+        ticketTypeId: v.ticketType.id === 'base' ? 'base' : v.ticketType.id,
+        quantity: v.quantity,
+        price: parseFloat(v.ticketType.price.toString()),
+        name: v.ticketType.name,
+        discountedPrices: matchingBreakdown.length > 0 
+          ? matchingBreakdown.map(b => b.discountedUnitPrice)
+          : undefined,
+      }
+    })
 
-    // Create ticket order (always unpaid initially, will be updated after payment)
-    const { data: order, error: orderError } = await supabase
+    // Create ticket order with additive promotion columns
+    const orderInsertPayload: any = {
+      event_id: eventId,
+      customer_name: customerName,
+      customer_email: customerEmail,
+      customer_phone: customerPhone || null,
+      total_amount: finalTotal,
+      subtotal_amount: subtotalAmount,
+      discount_amount: discountAmount,
+      promo_code: appliedPromotion?.promo_code || (promoCode ? promoCode.toUpperCase() : null),
+      promotion_id: appliedPromotion?.id || null,
+      payment_status: 'unpaid', // Always start as unpaid
+      payment_method: null,
+      payment_transaction_id: null,
+      order_number: orderNumber,
+      status: 'pending', // Will be confirmed after payment
+    }
+
+    let { data: order, error: orderError } = await supabase
       .from('ticket_orders')
-      .insert({
-        event_id: eventId,
-        customer_name: customerName,
-        customer_email: customerEmail,
-        customer_phone: customerPhone || null,
-        total_amount: totalAmount,
-        payment_status: 'unpaid', // Always start as unpaid
-        payment_method: null,
-        payment_transaction_id: null,
-        order_number: orderNumber,
-        status: 'pending', // Will be confirmed after payment
-      })
+      .insert(orderInsertPayload)
       .select()
       .single()
+
+    // Fallback if subtotal_amount/promotion_id columns not yet in DB
+    if (orderError && (orderError.message?.includes('column') || orderError.code === '42703')) {
+      delete orderInsertPayload.subtotal_amount
+      delete orderInsertPayload.discount_amount
+      delete orderInsertPayload.promo_code
+      delete orderInsertPayload.promotion_id
+      const retry = await supabase
+        .from('ticket_orders')
+        .insert(orderInsertPayload)
+        .select()
+        .single()
+      order = retry.data
+      orderError = retry.error
+    }
 
     if (orderError) {
       console.error('Order creation error:', orderError)
@@ -169,7 +233,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Store ticket selection for later use after payment
-    // Note: This table may not exist, so we'll catch the error gracefully
     try {
       const { error: selectionError } = await supabase
         .from('ticket_order_selections')
@@ -179,32 +242,24 @@ export async function POST(request: NextRequest) {
         })
 
       if (selectionError) {
-        // Only log if it's not a "table doesn't exist" error
         if (selectionError.code !== 'PGRST205') {
           console.error('Error storing ticket selection:', selectionError)
         }
-        // Continue anyway - we can reconstruct from order amount if needed
       }
     } catch (err) {
-      // Table doesn't exist or error - that's okay, continue silently
-      // The ticket selection is also included in the response, so it's not lost
+      // Table doesn't exist - handled gracefully
     }
 
     // Return payment URL instead of creating tickets immediately
-    // Use environment variable if available, otherwise construct from request URL
     let siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_BASE_URL
-    
     if (!siteUrl) {
-      // Construct from request URL for serverless environments
       const url = new URL(request.url)
       siteUrl = `${url.protocol}//${url.host}`
     }
-    
-    // Remove trailing slash if present
     siteUrl = siteUrl.replace(/\/$/, '')
     
-    // If total is 0, payment is not required
-    const paymentRequired = totalAmount > 0
+    // If total is 0 (e.g. 100% discount, complimentary or free ticket), payment is not required
+    const paymentRequired = finalTotal > 0
     
     return NextResponse.json({
       success: true,
@@ -212,11 +267,14 @@ export async function POST(request: NextRequest) {
         id: order.id,
         orderNumber: order.order_number,
         totalAmount: order.total_amount,
+        subtotalAmount: subtotalAmount,
+        discountAmount: discountAmount,
+        promotion: appliedPromotion ? { name: appliedPromotion.name } : null,
         status: order.status,
       },
       paymentRequired: paymentRequired,
       paymentUrl: paymentRequired 
-        ? `${siteUrl}/events/${encodeURIComponent(event.slug)}/payment?orderId=${order.id}&amount=${totalAmount}`
+        ? `${siteUrl}/events/${encodeURIComponent(event.slug)}/payment?orderId=${order.id}&amount=${finalTotal}`
         : null,
       tickets: ticketSelection, // Include ticket selection in response for payment page
       event: {

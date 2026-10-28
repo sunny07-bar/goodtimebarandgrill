@@ -313,7 +313,11 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      ticketValidations.push({ ticketType, quantity: ticketItem.quantity })
+      ticketValidations.push({ 
+        ticketType, 
+        quantity: ticketItem.quantity,
+        discountedPrices: ticketItem.discountedPrices 
+      })
     }
 
     // Create tickets
@@ -376,6 +380,11 @@ export async function POST(request: NextRequest) {
           margin: 2,
         })
 
+        // Determine price paid (use discounted price if available, otherwise regular ticket price)
+        const pricePaid = (validation.discountedPrices && validation.discountedPrices[i] !== undefined)
+          ? validation.discountedPrices[i]
+          : parseFloat(ticketType.price.toString())
+
         const { data: purchasedTicket, error: ticketError } = await supabase
           .from('purchased_tickets')
           .insert({
@@ -387,7 +396,7 @@ export async function POST(request: NextRequest) {
             status: 'valid',
             customer_name: customerName,
             ticket_type_name: ticketType.name,
-            price_paid: parseFloat(ticketType.price.toString()),
+            price_paid: pricePaid,
           })
           .select()
           .single()
@@ -423,6 +432,26 @@ export async function POST(request: NextRequest) {
             .update({ quantity_sold: (currentTicketType.quantity_sold || 0) + quantity })
             .eq('id', actualTicketTypeId)
         }
+      }
+    }
+
+    // Increment promotion uses count if a promotion was applied to this order
+    if (order.promotion_id) {
+      try {
+        const { data: promo } = await supabase
+          .from('event_promotions')
+          .select('uses_count')
+          .eq('id', order.promotion_id)
+          .single()
+
+        if (promo) {
+          await supabase
+            .from('event_promotions')
+            .update({ uses_count: (promo.uses_count || 0) + 1, updated_at: new Date().toISOString() })
+            .eq('id', order.promotion_id)
+        }
+      } catch (promoErr) {
+        console.warn('Could not increment promotion uses count:', promoErr)
       }
     }
 

@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Calendar, MapPin, Clock, Ticket, Loader2, ArrowLeft, ArrowRight, ExternalLink } from 'lucide-react'
-import { getEventBySlug } from '@/lib/queries'
+import { Calendar, MapPin, Clock, Ticket, Loader2, ArrowLeft, ArrowRight, ExternalLink, Sparkles, Tag } from 'lucide-react'
+import { getEventBySlug, getEventPromotions } from '@/lib/queries'
 import SupabaseImage from '@/components/SupabaseImage'
 import { formatFloridaTime, formatFloridaDateDDMMYYYY, toFloridaTime } from '@/lib/utils/timezone'
 import { format } from 'date-fns'
@@ -17,6 +17,7 @@ export default function EventDetailPage() {
   const [event, setEvent] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [isPastEvent, setIsPastEvent] = useState(false)
+  const [promotions, setPromotions] = useState<any[]>([])
 
   useEffect(() => {
     loadEvent()
@@ -47,6 +48,14 @@ export default function EventDetailPage() {
         }
 
         setEvent(eventData)
+
+        // Fetch active promotions for this event
+        try {
+          const promoData = await getEventPromotions(eventData.id)
+          setPromotions(promoData || [])
+        } catch (e) {
+          console.log('Promotions fetch error or unmigrated:', e)
+        }
       } else {
         console.error('Event not found for slug:', slug)
       }
@@ -262,37 +271,107 @@ export default function EventDetailPage() {
 
               if (event.event_tickets && event.event_tickets.length > 0) {
                 return (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
-                    {event.event_tickets.map((ticket: any) => {
-                      const available = (ticket.quantity_total || 0) - ticket.quantity_sold
-                      return (
-                        <div key={ticket.id} className="card-dark p-5 md:p-6 hover:border-[#F59E0B]/50 hover:shadow-lg transition-all duration-300 rounded-xl">
-                          <div className="mb-5">
-                            <h4 className="card-title mb-3 text-lg md:text-xl font-bold">{ticket.name}</h4>
-                            <p className="text-3xl md:text-4xl font-bold price-amber mb-3">
-                              ${ticket.price.toFixed(2)}
-                            </p>
-                            {ticket.quantity_total && (
-                              <p className="body-text text-sm md:text-base opacity-75">
-                                {available} of {ticket.quantity_total} available
-                              </p>
-                            )}
-                          </div>
-                          <button
-                            className="btn-amber w-full min-h-[48px] md:min-h-[52px] text-base md:text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation rounded-lg"
-                            onClick={() => router.push(`/events/${encodeURIComponent(params.slug as string)}/purchase`)}
-                            disabled={isPastEvent}
-                          >
-                            {isPastEvent ? 'Event Has Passed' : 'Buy Tickets'}
-                          </button>
+                  <div>
+                    {promotions && promotions.length > 0 && (
+                      <div className="mb-5 p-4 rounded-xl bg-gradient-to-r from-amber-500/15 via-[#F59E0B]/10 to-purple-500/15 border border-[#F59E0B]/30 shadow-md">
+                        <div className="flex items-center gap-2 text-[#F59E0B] font-bold text-sm mb-2.5">
+                          <Sparkles className="h-4 w-4 shrink-0 text-[#F59E0B]" />
+                          <span>Special Offers & Promotions:</span>
                         </div>
-                      )
-                    })}
+                        <div className="space-y-2">
+                          {promotions.map((promo) => (
+                            <div key={promo.id} className="flex items-center justify-between gap-3 flex-wrap bg-black/40 p-2.5 rounded-lg border border-white/10">
+                              <div className="flex items-center gap-2">
+                                <Tag className="h-3.5 w-3.5 text-[#F59E0B] shrink-0" />
+                                <span className="font-semibold text-white text-xs md:text-sm">
+                                  {promo.name}
+                                </span>
+                                <span className="text-xs text-gray-300 hidden sm:inline">
+                                  {promo.promo_code
+                                    ? `• Use code at checkout`
+                                    : `• Automatic bundle deal!`}
+                                </span>
+                              </div>
+                              {promo.promo_code ? (
+                                <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/40 text-amber-300">
+                                  Code: {promo.promo_code}
+                                </span>
+                              ) : (
+                                <span className="text-emerald-400 text-xs font-semibold bg-emerald-500/20 px-2 py-0.5 rounded">
+                                  Auto Deal
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
+                      {event.event_tickets.map((ticket: any) => {
+                        const available = (ticket.quantity_total || 0) - ticket.quantity_sold
+                        const hasOffer = promotions.some(p => !p.ticket_type_id || p.ticket_type_id === ticket.id)
+                        return (
+                          <div key={ticket.id} className="card-dark p-5 md:p-6 hover:border-[#F59E0B]/50 hover:shadow-lg transition-all duration-300 rounded-xl relative flex flex-col justify-between">
+                            <div className="mb-5">
+                              {hasOffer && (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 mb-2">
+                                  <Sparkles className="w-3 h-3" /> Special Deal Available
+                                </span>
+                              )}
+                              <h4 className="card-title mb-2 text-lg md:text-xl font-bold">{ticket.name}</h4>
+                              <p className="text-3xl md:text-4xl font-bold price-amber mb-2">
+                                ${ticket.price.toFixed(2)}
+                              </p>
+                              {ticket.quantity_total && (
+                                <p className="body-text text-sm md:text-base opacity-75">
+                                  {available} of {ticket.quantity_total} available
+                                </p>
+                              )}
+                            </div>
+                            <button
+                              className="btn-amber w-full min-h-[48px] md:min-h-[52px] text-base md:text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation rounded-lg mt-auto"
+                              onClick={() => router.push(`/events/${encodeURIComponent(params.slug as string)}/purchase`)}
+                              disabled={isPastEvent}
+                            >
+                              {isPastEvent ? 'Event Has Passed' : 'Buy Tickets'}
+                            </button>
+                          </div>
+                        )
+                      })}
+                    </div>
                   </div>
                 )
               } else if (event.base_ticket_price && parseFloat(event.base_ticket_price.toString()) > 0) {
                 return (
-                  <div className="max-w-md mx-auto card-dark p-6 md:p-8 hover:border-[#F59E0B]/50 hover:shadow-lg transition-all duration-300 rounded-xl">
+                  <div>
+                    {promotions && promotions.length > 0 && (
+                      <div className="mb-5 p-4 rounded-xl bg-gradient-to-r from-amber-500/15 via-purple-500/15 to-amber-500/15 border border-amber-500/30 max-w-md mx-auto">
+                        <div className="flex items-center justify-between gap-3 flex-wrap">
+                          <div className="flex items-center gap-2.5">
+                            <div className="h-8 w-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                              <Sparkles className="h-4 w-4" />
+                            </div>
+                            <div>
+                              <span className="font-bold text-white text-sm block">
+                                Special Deal: {promotions[0].name}
+                              </span>
+                              <p className="text-xs text-amber-300/80">
+                                {promotions[0].promo_code
+                                  ? `Use coupon code "${promotions[0].promo_code}" on checkout page!`
+                                  : 'Discount applied automatically at checkout!'}
+                              </p>
+                            </div>
+                          </div>
+                          {promotions[0].promo_code && (
+                            <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-md bg-black/60 border border-amber-500/40 text-amber-300">
+                              {promotions[0].promo_code}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    <div className="max-w-md mx-auto card-dark p-6 md:p-8 hover:border-[#F59E0B]/50 hover:shadow-lg transition-all duration-300 rounded-xl">
                     <div className="text-center mb-6">
                       <h4 className="card-title mb-4 text-xl md:text-2xl font-bold">General Admission</h4>
                       <p className="text-4xl md:text-5xl font-bold price-amber">
@@ -311,6 +390,7 @@ export default function EventDetailPage() {
                     >
                       {isPastEvent ? 'Event Has Passed' : 'Buy Tickets'}
                     </button>
+                    </div>
                   </div>
                 )
               } else {

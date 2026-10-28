@@ -286,10 +286,51 @@ export async function getEventBySlug(slug: string) {
       })
       return null
     }
+
+    // Filter out inactive/paused ticket types from customer view
+    if (data && data.event_tickets && Array.isArray(data.event_tickets)) {
+      data.event_tickets = data.event_tickets.filter((t: any) => t.is_active !== false)
+    }
+
     return data
   } catch (error) {
     console.error('Error in getEventBySlug:', error)
     return null
+  }
+}
+
+// Event Promotions (Discounts & BOGO)
+export async function getEventPromotions(eventId: string) {
+  try {
+    if (!supabase) return []
+    const now = new Date().toISOString()
+    const { data, error } = await supabase
+      .from('event_promotions')
+      .select('*')
+      .eq('event_id', eventId)
+      .eq('is_active', true)
+      .order('created_at', { ascending: true })
+
+    if (error) {
+      // If table does not exist yet before migration, fail silently
+      if (error.code !== 'PGRST205' && !error.message?.includes('does not exist')) {
+        console.warn('Error fetching event promotions:', error.message)
+      }
+      return []
+    }
+
+    // Filter by start_date, end_date, and max uses if set
+    const activePromos = (data || []).filter((promo: any) => {
+      if (promo.start_date && new Date(promo.start_date) > new Date(now)) return false
+      if (promo.end_date && new Date(promo.end_date) < new Date(now)) return false
+      if (promo.max_uses_total && (promo.uses_count || 0) >= promo.max_uses_total) return false
+      return true
+    })
+
+    return activePromos
+  } catch (error) {
+    console.warn('Error in getEventPromotions:', error)
+    return []
   }
 }
 

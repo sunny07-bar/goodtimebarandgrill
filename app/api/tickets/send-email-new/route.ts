@@ -66,8 +66,8 @@ export async function POST(request: NextRequest) {
 
     // Prepare event data
     const event = order.events;
-    const eventTime = formatFloridaTime(event.event_start, 'h:mm a');
-    const formattedEventDate = formatFloridaTime(event.event_start, 'EEEE, MM-dd-yyyy');
+    const eventTime = formatFloridaTime(event.event_start, 'h:mm a') + ' EST';
+    const formattedEventDate = formatFloridaTime(event.event_start, 'EEEE, MMMM d, yyyy');
     
     // Generate QR codes for ALL tickets and prepare attachments
     const ticketsWithQR: Array<{
@@ -146,10 +146,13 @@ export async function POST(request: NextRequest) {
         eventTitle: event.title,
         eventDate: formattedEventDate,
         eventTime: eventTime,
-        eventLocation: event.location || 'TBD',
+        eventLocation: event.location || '1720 Fennell St, Maitland, FL 32751',
         customerName: order.customer_name,
         orderNumber: order.order_number || orderId.slice(0, 8).toUpperCase(),
         totalAmount: totalAmount,
+        subtotalAmount: order.subtotal_amount ? parseFloat(order.subtotal_amount.toString()) : undefined,
+        discountAmount: order.discount_amount ? parseFloat(order.discount_amount.toString()) : undefined,
+        promoCode: order.promo_code || undefined,
         tickets: ticketsWithQR,
       });
 
