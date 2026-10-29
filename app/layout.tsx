@@ -80,9 +80,7 @@ export const metadata: Metadata = {
     apple: '/images/good-times-logo.png',
   },
   verification: {
-    // Add your verification codes here when available
-    // google: 'your-google-verification-code',
-    // yandex: 'your-yandex-verification-code',
+    google: '3lprDqe1YfTwgtoaz2fvaxcvrGxcbyw47AlA2YDwqa4',
   },
 }
 
