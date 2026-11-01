@@ -56,10 +56,10 @@ export default function TicketConfirmationPage() {
               Promise.all(
                 ticketsData.map(async (ticket: any) => {
                   try {
-                    const qrCodeImage = await QRCode.toDataURL(ticket.qr_code_data, {
-                      errorCorrectionLevel: 'H',
+                    const qrCodeImage = await QRCode.toDataURL(ticket.ticket_number || ticket.qr_code_data, {
+                      errorCorrectionLevel: 'M',
                       type: 'image/png',
-                      width: 300,
+                      width: 320,
                       margin: 2,
                     })
                     return {
@@ -261,10 +261,10 @@ export default function TicketConfirmationPage() {
                 const ticketsWithQR = await Promise.all(
                   newTicketsData.map(async (ticket: any) => {
                     try {
-                      const qrCodeImage = await QRCode.toDataURL(ticket.qr_code_data, {
-                        errorCorrectionLevel: 'H',
+                      const qrCodeImage = await QRCode.toDataURL(ticket.ticket_number || ticket.qr_code_data, {
+                        errorCorrectionLevel: 'M',
                         type: 'image/png',
-                        width: 300,
+                        width: 320,
                         margin: 2,
                       })
                       return {
@@ -304,10 +304,10 @@ export default function TicketConfirmationPage() {
         const ticketsWithQR = await Promise.all(
           ticketsData.map(async (ticket: any) => {
             try {
-              const qrCodeImage = await QRCode.toDataURL(ticket.qr_code_data, {
-                errorCorrectionLevel: 'H',
+              const qrCodeImage = await QRCode.toDataURL(ticket.ticket_number || ticket.qr_code_data, {
+                errorCorrectionLevel: 'M',
                 type: 'image/png',
-                width: 300,
+                width: 320,
                 margin: 2,
               })
               return {

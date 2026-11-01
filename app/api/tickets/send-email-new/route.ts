@@ -85,10 +85,10 @@ export async function POST(request: NextRequest) {
 
     for (const ticket of order.purchased_tickets) {
       try {
-        const qrCodeDataUrl = await QRCode.toDataURL(ticket.qr_code_data, {
-          errorCorrectionLevel: 'H',
+        const qrCodeDataUrl = await QRCode.toDataURL(ticket.ticket_number || ticket.qr_code_data, {
+          errorCorrectionLevel: 'M',
           type: 'image/png',
-          width: 300,
+          width: 320,
           margin: 2,
         });
 
