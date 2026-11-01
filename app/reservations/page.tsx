@@ -111,6 +111,7 @@ function ReservationsPageContent() {
     if (formData.reservationDate) {
       loadHoursAndSlots()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.reservationDate, formData.guestsCount])
 
 
@@ -313,9 +314,7 @@ function ReservationsPageContent() {
     }, 800) // 800ms debounce
 
     return () => clearTimeout(timeoutId)
-    // We need to re-run this if:
-    // 1. Email changes (obviously)
-    // 2. Reservation details change (might switch from free to paid)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.customerEmail, formData.reservationTime, formData.reservationDate, specialHoursInfo, eventsOnDate])
 
   const handleEmailVerified = () => {

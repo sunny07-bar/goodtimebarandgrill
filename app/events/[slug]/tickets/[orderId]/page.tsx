@@ -30,6 +30,7 @@ export default function TicketConfirmationPage() {
   useEffect(() => {
     loadTickets()
     loadRestaurantInfo()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderId])
 
   // Auto-refresh if order is paid but tickets are missing (only if purchase wasn't attempted)
@@ -744,6 +745,7 @@ export default function TicketConfirmationPage() {
                       <div className="flex flex-col items-center justify-center">
                         {ticket.qr_code_image ? (
                           <>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src={ticket.qr_code_image}
                               alt="QR Code"

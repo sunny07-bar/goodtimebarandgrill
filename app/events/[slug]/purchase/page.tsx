@@ -37,6 +37,7 @@ export default function TicketPurchasePage() {
 
   useEffect(() => {
     loadEvent()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.slug])
 
   // Check if email is already verified (from database or localStorage)
