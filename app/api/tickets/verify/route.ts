@@ -81,7 +81,10 @@ export async function POST(request: NextRequest) {
       redeemed_at,
       ticket_orders (
         events (
-          title
+          title,
+          event_start,
+          event_end,
+          location
         )
       )
     `
@@ -151,6 +154,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const eventObj = (ticket.ticket_orders as any)?.events || null
+    const eventTitle = eventObj?.title || null
+    const eventStart = eventObj?.event_start || null
+    const eventEnd = eventObj?.event_end || null
+    const eventLocation = eventObj?.location || null
+
     // Check if ticket was already checked in or used
     if (ticket.status === 'used' || ticket.checked_in === true) {
       const redeemedTime = ticket.redeemed_at || ticket.checked_in_at || new Date().toISOString()
@@ -162,7 +171,10 @@ export async function POST(request: NextRequest) {
           ticket_number: ticket.ticket_number,
           customer_name: ticket.customer_name,
           ticket_type: ticket.ticket_type_name,
-          event_title: (ticket.ticket_orders as any)?.events?.title || null,
+          event_title: eventTitle,
+          event_start: eventStart,
+          event_end: eventEnd,
+          event_location: eventLocation,
           redeemed_at: redeemedTime,
         },
         { status: 400 }
@@ -179,7 +191,10 @@ export async function POST(request: NextRequest) {
           ticket_number: ticket.ticket_number,
           customer_name: ticket.customer_name,
           ticket_type: ticket.ticket_type_name,
-          event_title: (ticket.ticket_orders as any)?.events?.title || null,
+          event_title: eventTitle,
+          event_start: eventStart,
+          event_end: eventEnd,
+          event_location: eventLocation,
         },
         { status: 400 }
       )
@@ -221,7 +236,10 @@ export async function POST(request: NextRequest) {
       ticket_number: ticket.ticket_number,
       customer_name: ticket.customer_name,
       ticket_type: ticket.ticket_type_name,
-      event_title: (ticket.ticket_orders as any)?.events?.title || null,
+      event_title: eventTitle,
+      event_start: eventStart,
+      event_end: eventEnd,
+      event_location: eventLocation,
       redeemed_at: nowIso,
     })
   } catch (error: any) {

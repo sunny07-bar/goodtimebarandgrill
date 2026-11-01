@@ -24,6 +24,36 @@ export function formatFloridaTime(
 }
 
 /**
+ * Format event date & time range in Florida venue timezone
+ * e.g. "Sun, Oct 4, 2026 • 7:00 PM – 10:00 PM (EDT)"
+ */
+export function formatEventSchedule(
+  startIso?: string | null,
+  endIso?: string | null
+): string | null {
+  if (!startIso) return null
+  try {
+    const tzAbbr = formatFloridaTime(startIso, 'zzz')
+    const startDate = formatFloridaTime(startIso, 'EEE, MMM d, yyyy')
+    const startTime = formatFloridaTime(startIso, 'h:mm a')
+
+    if (!endIso) {
+      return `${startDate} • ${startTime} (${tzAbbr})`
+    }
+
+    const endDate = formatFloridaTime(endIso, 'EEE, MMM d, yyyy')
+    const endTime = formatFloridaTime(endIso, 'h:mm a')
+
+    if (startDate === endDate) {
+      return `${startDate} • ${startTime} – ${endTime} (${tzAbbr})`
+    }
+    return `${startDate} ${startTime} – ${endDate} ${endTime} (${tzAbbr})`
+  } catch (e) {
+    return null
+  }
+}
+
+/**
  * Get current date/time in Florida timezone
  */
 export function getFloridaNow(): Date {
