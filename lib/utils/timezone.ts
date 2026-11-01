@@ -25,7 +25,9 @@ export function formatFloridaTime(
 
 /**
  * Format event date & time range in Florida venue timezone
- * e.g. "Sun, Oct 4, 2026 • 7:00 PM – 10:00 PM (EDT)"
+ * Robustly handles events with or without an end time:
+ * - With end time: "Sun, Oct 4, 2026 • 7:00 PM – 10:00 PM (EDT)"
+ * - Without end time: "Sun, Oct 4, 2026 • Starts at 7:00 PM (EDT)"
  */
 export function formatEventSchedule(
   startIso?: string | null,
@@ -37,17 +39,27 @@ export function formatEventSchedule(
     const startDate = formatFloridaTime(startIso, 'EEE, MMM d, yyyy')
     const startTime = formatFloridaTime(startIso, 'h:mm a')
 
-    if (!endIso) {
-      return `${startDate} • ${startTime} (${tzAbbr})`
+    // Handle missing, null, undefined, empty, or whitespace end time
+    const cleanEndIso = typeof endIso === 'string' ? endIso.trim() : null
+    if (!cleanEndIso || cleanEndIso === 'null' || cleanEndIso === 'undefined') {
+      return `${startDate} • Starts at ${startTime} (${tzAbbr})`
     }
 
-    const endDate = formatFloridaTime(endIso, 'EEE, MMM d, yyyy')
-    const endTime = formatFloridaTime(endIso, 'h:mm a')
+    try {
+      const endDate = formatFloridaTime(cleanEndIso, 'EEE, MMM d, yyyy')
+      const endTime = formatFloridaTime(cleanEndIso, 'h:mm a')
 
-    if (startDate === endDate) {
-      return `${startDate} • ${startTime} – ${endTime} (${tzAbbr})`
+      if (!endDate || !endTime || endDate.includes('Invalid') || endTime.includes('Invalid')) {
+        return `${startDate} • Starts at ${startTime} (${tzAbbr})`
+      }
+
+      if (startDate === endDate) {
+        return `${startDate} • ${startTime} – ${endTime} (${tzAbbr})`
+      }
+      return `${startDate} ${startTime} – ${endDate} ${endTime} (${tzAbbr})`
+    } catch {
+      return `${startDate} • Starts at ${startTime} (${tzAbbr})`
     }
-    return `${startDate} ${startTime} – ${endDate} ${endTime} (${tzAbbr})`
   } catch (e) {
     return null
   }
