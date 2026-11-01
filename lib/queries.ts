@@ -3,6 +3,7 @@ import { getFloridaNow, floridaToUTC, FLORIDA_TIMEZONE, getDayOfWeekInFlorida, t
 import { parseISO, format } from 'date-fns'
 import { fromZonedTime } from 'date-fns-tz'
 import { logError } from './utils/logger'
+import { fullyDecodeSlug } from './utils/slug'
 
 // Helper to log query errors with more detail
 function logQueryError(functionName: string, error: any, table?: string) {
@@ -223,66 +224,88 @@ export async function getEvents(featured?: boolean) {
 
 export async function getEventBySlug(slug: string) {
   try {
-    if (!supabase) {
-      console.error('Supabase client not available')
+    if (!supabase || !slug) {
+      if (!supabase) console.error('Supabase client not available')
       return null
     }
     
-    // Decode URL-encoded slug (handles %20 for spaces, etc.)
-    const decodedSlug = decodeURIComponent(slug)
-    
-    // Try exact match first (with decoded slug)
-    let { data, error } = await supabase
-      .from('events')
-      .select(`
-        *,
-        event_tickets (*)
-      `)
-      .eq('slug', decodedSlug)
-      .single()
+    // Fully decode URL-encoded slug (handles nested %2520, %20, etc.)
+    const decodedSlug = fullyDecodeSlug(slug)
 
-    // If not found, try with the original slug (in case it's stored as-is)
-    if (error && slug !== decodedSlug) {
-      const { data: data2, error: error2 } = await supabase
+    // Collect candidate slug variations to try
+    const candidates = Array.from(new Set([
+      decodedSlug,
+      decodedSlug.trim(),
+      slug,
+      slug.trim(),
+    ])).filter(Boolean)
+
+    let data: any = null
+    let error: any = null
+
+    // 1. Try exact match on candidate variations
+    for (const candidate of candidates) {
+      const res = await supabase
         .from('events')
         .select(`
           *,
           event_tickets (*)
         `)
-        .eq('slug', slug)
-        .single()
-      
-      if (!error2) {
-        data = data2
+        .eq('slug', candidate)
+        .maybeSingle()
+
+      if (res.data) {
+        data = res.data
         error = null
+        break
+      }
+      if (res.error) error = res.error
+    }
+
+    // 2. If not found, try case-insensitive match on candidate variations
+    if (!data) {
+      for (const candidate of candidates) {
+        const res = await supabase
+          .from('events')
+          .select(`
+            *,
+            event_tickets (*)
+          `)
+          .ilike('slug', candidate)
+          .maybeSingle()
+
+        if (res.data) {
+          data = res.data
+          error = null
+          break
+        }
+        if (res.error) error = res.error
       }
     }
 
-    // If still not found, try case-insensitive match (some databases are case-sensitive)
-    if (error) {
-      const { data: data3, error: error3 } = await supabase
+    // 3. Fallback: prefix match in case the database slug has trailing spaces or characters
+    if (!data && decodedSlug.trim()) {
+      const res = await supabase
         .from('events')
         .select(`
           *,
           event_tickets (*)
         `)
-        .ilike('slug', decodedSlug)
-        .single()
-      
-      if (!error3) {
-        data = data3
+        .ilike('slug', `${decodedSlug.trim()}%`)
+        .limit(1)
+
+      if (res.data && res.data.length > 0) {
+        data = res.data[0]
         error = null
       }
     }
 
-    if (error) {
-      console.error('Error fetching event:', {
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code,
-        searchedSlug: decodedSlug,
-        originalSlug: slug
+    if (!data) {
+      console.error('Error fetching event: No event found matching slug', {
+        decodedSlug,
+        originalSlug: slug,
+        candidates,
+        error: error ? error.message : undefined,
       })
       return null
     }

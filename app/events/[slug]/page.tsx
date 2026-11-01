@@ -8,6 +8,7 @@ import { Calendar, MapPin, Clock, Ticket, Loader2, ArrowLeft, ArrowRight, Extern
 import { getEventBySlug, getEventPromotions } from '@/lib/queries'
 import SupabaseImage from '@/components/SupabaseImage'
 import { formatFloridaTime, formatFloridaDateDDMMYYYY, toFloridaTime } from '@/lib/utils/timezone'
+import { fullyDecodeSlug, safeEncodeSlug } from '@/lib/utils/slug'
 import { format } from 'date-fns'
 import Link from 'next/link'
 
@@ -25,8 +26,8 @@ export default function EventDetailPage() {
 
   const loadEvent = async () => {
     try {
-      // Decode the slug from URL params (Next.js should handle this, but be explicit)
-      const slug = decodeURIComponent(params.slug as string)
+      // Decode the slug from URL params (safely handles any level of URL encoding)
+      const slug = fullyDecodeSlug(params.slug as string)
       console.log('Loading event with slug:', slug)
 
       const eventData = await getEventBySlug(slug)
@@ -42,9 +43,14 @@ export default function EventDetailPage() {
         // Check if event is in the past (using Florida timezone)
         if (eventData.event_start) {
           const { toFloridaTime, getFloridaNow } = require('@/lib/utils/timezone')
-          const eventStartFlorida = toFloridaTime(eventData.event_start)
           const floridaNow = getFloridaNow()
-          setIsPastEvent(eventStartFlorida < floridaNow)
+          if (eventData.event_end) {
+            const eventEndFlorida = toFloridaTime(eventData.event_end)
+            setIsPastEvent(eventEndFlorida < floridaNow)
+          } else {
+            const eventStartFlorida = toFloridaTime(eventData.event_start)
+            setIsPastEvent(eventStartFlorida < floridaNow)
+          }
         }
 
         setEvent(eventData)
@@ -95,6 +101,11 @@ export default function EventDetailPage() {
   const handleBack = () => {
     // Navigate back to events page
     router.push('/events')
+  }
+
+  const navigateToPurchase = () => {
+    const targetSlug = safeEncodeSlug(event?.slug || (params.slug as string))
+    router.push(`/events/${targetSlug}/purchase`)
   }
 
   return (
@@ -331,7 +342,7 @@ export default function EventDetailPage() {
                             </div>
                             <button
                               className="btn-amber w-full min-h-[48px] md:min-h-[52px] text-base md:text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation rounded-lg mt-auto"
-                              onClick={() => router.push(`/events/${encodeURIComponent(params.slug as string)}/purchase`)}
+                              onClick={navigateToPurchase}
                               disabled={isPastEvent}
                             >
                               {isPastEvent ? 'Event Has Passed' : 'Buy Tickets'}
@@ -385,7 +396,7 @@ export default function EventDetailPage() {
                     </div>
                     <button
                       className="btn-amber w-full min-h-[48px] md:min-h-[52px] text-base md:text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation rounded-lg"
-                      onClick={() => router.push(`/events/${encodeURIComponent(params.slug as string)}/purchase`)}
+                      onClick={navigateToPurchase}
                       disabled={isPastEvent}
                     >
                       {isPastEvent ? 'Event Has Passed' : 'Buy Tickets'}

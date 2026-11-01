@@ -5,6 +5,7 @@ import { useSearchParams, useRouter, useParams } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Loader2, CreditCard, AlertCircle, Ticket, Lock } from 'lucide-react'
+import { safeEncodeSlug } from '@/lib/utils/slug'
 
 function TicketPaymentPageContent() {
   const searchParams = useSearchParams()
@@ -105,7 +106,7 @@ function TicketPaymentPageContent() {
             <p className="text-gray-600 mb-6">
               Missing order or payment information. Please try purchasing tickets again.
             </p>
-            <Button onClick={() => router.push(`/events/${params.slug}`)}>
+            <Button onClick={() => router.push(`/events/${safeEncodeSlug(params.slug as string)}`)}>
               Back to Event
             </Button>
           </CardContent>
@@ -219,7 +220,7 @@ function TicketPaymentPageContent() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => router.push(`/events/${params.slug}`)}
+                onClick={() => router.push(`/events/${safeEncodeSlug(params.slug as string)}`)}
                 className="w-full min-h-[44px] sm:h-12 text-base sm:text-lg touch-manipulation"
                 disabled={loading}
               >

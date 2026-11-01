@@ -58,9 +58,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if event is in the past (compare in UTC, as events are stored in UTC)
-    const eventStartUTC = new Date(event.event_start)
     const nowUTC = new Date()
-    if (eventStartUTC < nowUTC) {
+    const isPast = event.event_end 
+      ? new Date(event.event_end) < nowUTC 
+      : new Date(event.event_start) < nowUTC
+    if (isPast) {
       return NextResponse.json(
         { error: 'Cannot purchase tickets for past events' },
         { status: 400 }

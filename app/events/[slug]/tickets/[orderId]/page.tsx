@@ -10,6 +10,7 @@ import jsPDF from 'jspdf'
 import type { jsPDF as JSPDFType } from 'jspdf'
 import AnimatedSection from '@/components/AnimatedSection'
 import { formatFloridaTime } from '@/lib/utils/timezone'
+import { safeEncodeSlug } from '@/lib/utils/slug'
 
 export default function TicketConfirmationPage() {
   const params = useParams()
@@ -156,6 +157,7 @@ export default function TicketConfirmationPage() {
           events (
             id,
             title,
+            slug,
             event_start,
             event_end,
             location
@@ -627,7 +629,8 @@ export default function TicketConfirmationPage() {
             <button
               onClick={() => {
                 // Use relative URL - will work in both development and production
-                window.location.href = `/events/${encodeURIComponent(params.slug as string)}/payment?orderId=${orderId}&amount=${order.total_amount}`
+                const cleanSlug = safeEncodeSlug(order?.events?.slug || (params.slug as string))
+                window.location.href = `/events/${cleanSlug}/payment?orderId=${orderId}&amount=${order.total_amount}`
               }}
               className="btn-amber mt-4 min-h-[44px] touch-manipulation"
             >

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,6 +20,11 @@ export default function EmailVerification({ email, onVerified, onCancel }: Email
   const [otpSent, setOtpSent] = useState(false);
   const [verified, setVerified] = useState(false);
   const [checkingVerification, setCheckingVerification] = useState(true);
+
+  const onVerifiedRef = useRef(onVerified);
+  useEffect(() => {
+    onVerifiedRef.current = onVerified;
+  }, [onVerified]);
 
   // Check if email is already verified when component mounts
   useEffect(() => {
@@ -41,7 +46,7 @@ export default function EmailVerification({ email, onVerified, onCancel }: Email
           // Email is already verified, skip verification
           setVerified(true);
           setTimeout(() => {
-            onVerified();
+            onVerifiedRef.current();
           }, 500);
         }
       } catch (err) {
@@ -52,7 +57,7 @@ export default function EmailVerification({ email, onVerified, onCancel }: Email
     };
 
     checkEmailVerification();
-  }, [email, onVerified]);
+  }, [email]);
 
   const handleSendOTP = async () => {
     // First check if email is already verified
@@ -68,7 +73,7 @@ export default function EmailVerification({ email, onVerified, onCancel }: Email
         // Email is already verified, skip sending OTP
         setVerified(true);
         setTimeout(() => {
-          onVerified();
+          onVerifiedRef.current();
         }, 500);
         return;
       }
@@ -97,7 +102,7 @@ export default function EmailVerification({ email, onVerified, onCancel }: Email
       if (data.alreadyVerified) {
         setVerified(true);
         setTimeout(() => {
-          onVerified();
+          onVerifiedRef.current();
         }, 500);
         return;
       }
@@ -134,7 +139,7 @@ export default function EmailVerification({ email, onVerified, onCancel }: Email
 
       setVerified(true);
       setTimeout(() => {
-        onVerified();
+        onVerifiedRef.current();
       }, 1000);
     } catch (err: any) {
       setError(err.message || 'Invalid verification code');

@@ -11,6 +11,7 @@ import { getEventBySlug, getEventPromotions } from '@/lib/queries'
 import AnimatedSection from '@/components/AnimatedSection'
 import EmailVerification from '@/components/EmailVerification'
 import { calculateTicketPromotions, TicketCartItem, PromotionRule } from '@/lib/utils/promotions'
+import { fullyDecodeSlug, safeEncodeSlug } from '@/lib/utils/slug'
 
 export default function TicketPurchasePage() {
   const params = useParams()
@@ -93,7 +94,8 @@ export default function TicketPurchasePage() {
 
   const loadEvent = async () => {
     try {
-      const eventData = await getEventBySlug(params.slug as string)
+      const slug = fullyDecodeSlug(params.slug as string)
+      const eventData = await getEventBySlug(slug)
       if (eventData) {
         setEvent(eventData)
 
@@ -298,7 +300,8 @@ export default function TicketPurchasePage() {
           throw new Error(errorData.error || 'Failed to complete ticket purchase')
         }
 
-        router.push(`/events/${encodeURIComponent(params.slug as string)}/tickets/${data.order.id}`)
+        const cleanSlug = safeEncodeSlug(event?.slug || (params.slug as string))
+        router.push(`/events/${cleanSlug}/tickets/${data.order.id}`)
       } else {
         throw new Error('Payment required but no payment URL provided')
       }
@@ -335,7 +338,7 @@ export default function TicketPurchasePage() {
         {/* Top Navigation & Breadcrumb */}
         <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-white/10">
           <Link
-            href={`/events/${params.slug}`}
+            href={`/events/${safeEncodeSlug(event?.slug || (params.slug as string))}`}
             className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-[#F59E0B] transition-colors w-fit"
           >
             <ArrowLeft className="h-4 w-4" />

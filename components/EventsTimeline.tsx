@@ -7,6 +7,7 @@ import { Calendar, Clock, MapPin, ArrowRight, Ticket, ExternalLink } from 'lucid
 import SupabaseImage from '@/components/SupabaseImage'
 import AnimatedSection from '@/components/AnimatedSection'
 import { formatFloridaTime, toFloridaTime, getFloridaNow, formatFloridaDateDDMMYYYY } from '@/lib/utils/timezone'
+import { safeEncodeSlug } from '@/lib/utils/slug'
 
 interface Event {
   id: string
@@ -464,7 +465,7 @@ export default function EventsTimeline({ events }: EventsTimelineProps) {
                           </div>
 
                           {/* Event Image - Smaller on mobile */}
-                          <Link href={`/events/${encodeURIComponent(event.slug)}`} className="flex-1 max-w-[120px]">
+                          <Link href={`/events/${safeEncodeSlug(event.slug)}`} className="flex-1 max-w-[120px]">
                             <div className="relative aspect-square rounded-lg overflow-hidden group">
                               {event.image_path ? (
                                 <SupabaseImage
@@ -548,7 +549,7 @@ export default function EventsTimeline({ events }: EventsTimelineProps) {
                             
                             {/* For custom_tickets, show View Details button to go inside event */}
                             {(event.action_button_type === 'custom_tickets' || !event.action_button_type) && (
-                              <Link href={`/events/${encodeURIComponent(event.slug)}`} className="block">
+                              <Link href={`/events/${safeEncodeSlug(event.slug)}`} className="block">
                                 <button className="btn-amber-sm w-full text-sm">
                                   View Details <ArrowRight className="ml-2 h-3.5 w-3.5 inline" />
                                 </button>
@@ -640,7 +641,7 @@ export default function EventsTimeline({ events }: EventsTimelineProps) {
                             
                             {/* For custom_tickets, show View Details button to go inside event */}
                             {(event.action_button_type === 'custom_tickets' || !event.action_button_type) && (
-                              <Link href={`/events/${encodeURIComponent(event.slug)}`} className="inline-block">
+                              <Link href={`/events/${safeEncodeSlug(event.slug)}`} className="inline-block">
                                 <button className="btn-amber-sm inline-flex items-center gap-2 text-sm">
                                   View Details <ArrowRight className="h-4 w-4" />
                                 </button>
@@ -651,7 +652,7 @@ export default function EventsTimeline({ events }: EventsTimelineProps) {
 
                         {/* Image Section */}
                         <div className={`col-span-3 ${isEven ? 'order-3' : 'order-1'}`}>
-                          <Link href={`/events/${encodeURIComponent(event.slug)}`}>
+                          <Link href={`/events/${safeEncodeSlug(event.slug)}`}>
                             <div className="relative aspect-[4/5] rounded-xl overflow-hidden group cursor-pointer">
                               {event.image_path ? (
                                 <SupabaseImage

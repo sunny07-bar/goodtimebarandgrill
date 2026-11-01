@@ -21,91 +21,126 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // QR code data is stored as a JSON string in the database
-    // We need to hash it exactly as it was stored (as a string, not parsed)
-    let qrDataString: string
-    
-    if (typeof qrCodeData === 'string') {
-      // If it's already a string, use it directly (this is how it's stored in DB)
-      qrDataString = qrCodeData
-    } else {
-      // If it's an object, stringify it (shouldn't happen, but handle it)
-      qrDataString = JSON.stringify(qrCodeData)
+    // Determine string representation of QR code data
+    let qrDataString: string = typeof qrCodeData === 'string' ? qrCodeData.trim() : JSON.stringify(qrCodeData)
+
+    // Unescape if wrapped in quotes
+    if ((qrDataString.startsWith('"') && qrDataString.endsWith('"')) || (qrDataString.startsWith("'") && qrDataString.endsWith("'"))) {
+      try {
+        const unescaped = JSON.parse(qrDataString)
+        if (typeof unescaped === 'string') qrDataString = unescaped.trim()
+      } catch (e) {}
     }
 
-    // Generate hash from QR data string (must match how it was hashed during purchase)
+    // Compute hash of the string
     const qrHash = crypto.createHash('sha256').update(qrDataString).digest('hex')
 
-    // Extract ticket number if input was JSON or a direct ticket number string
+    // Extract ticket number and other fields if available
     let extractedTicketNumber: string | null = null
+    let extractedOrderId: string | null = null
+    let extractedTicketId: string | null = null
+
     try {
       const parsed = typeof qrCodeData === 'object' ? qrCodeData : JSON.parse(qrDataString)
-      if (parsed && parsed.ticketNumber) {
-        extractedTicketNumber = parsed.ticketNumber
+      if (parsed) {
+        if (parsed.ticketNumber) extractedTicketNumber = String(parsed.ticketNumber).trim()
+        if (parsed.orderId) extractedOrderId = String(parsed.orderId).trim()
+        if (parsed.ticketId) extractedTicketId = String(parsed.ticketId).trim()
       }
     } catch {
-      // Not JSON, check if it looks like a ticket number (e.g., TKT-...)
-      if (qrDataString.startsWith('TKT-') || qrDataString.length > 5) {
-        extractedTicketNumber = qrDataString.trim()
+      // Not JSON string
+    }
+
+    // If no ticket number extracted yet, check regex or prefix
+    if (!extractedTicketNumber) {
+      const tktMatch = qrDataString.match(/TKT-[A-Z0-9-]+/i)
+      if (tktMatch) {
+        extractedTicketNumber = tktMatch[0]
+      } else if (/^[A-Z0-9-]{6,}$/i.test(qrDataString)) {
+        extractedTicketNumber = qrDataString
       }
     }
 
-    // Attempt 1: Try database RPC function 'redeem_ticket'
-    try {
-      const { data: redemptionResult, error: redemptionError } = await supabase.rpc(
-        'redeem_ticket',
-        {
-          p_qr_code_hash: qrHash,
-          p_redeemed_by: staffId || null,
-          p_location: location || null,
-        }
+    // If string is a URL, extract order UUID if present
+    if (qrDataString.includes('http://') || qrDataString.includes('https://')) {
+      const uuidMatch = qrDataString.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i)
+      if (uuidMatch && !extractedOrderId) extractedOrderId = uuidMatch[0]
+    }
+
+    // Lookup ticket in purchased_tickets table
+    let ticket: any = null
+
+    const ticketSelectFields = `
+      id,
+      ticket_number,
+      customer_name,
+      ticket_type_name,
+      status,
+      checked_in,
+      checked_in_at,
+      redeemed_at,
+      ticket_orders (
+        events (
+          title
+        )
       )
+    `
 
-      if (!redemptionError && redemptionResult) {
-        const result = typeof redemptionResult === 'string' 
-          ? JSON.parse(redemptionResult) 
-          : redemptionResult
-
-        if (result.success) {
-          return NextResponse.json({
-            success: true,
-            message: result.message || 'Ticket verified successfully',
-            ticket_number: result.ticket_number,
-            customer_name: result.customer_name,
-            ticket_type: result.ticket_type,
-            redeemed_at: result.redeemed_at || new Date().toISOString(),
-          })
-        } else if (result.error === 'already_redeemed') {
-          return NextResponse.json(
-            {
-              success: false,
-              error: result.error,
-              message: result.message || 'Ticket has already been redeemed',
-              ticket_number: result.ticket_number,
-              redeemed_at: result.redeemed_at,
-            },
-            { status: 400 }
-          )
-        }
-      }
-    } catch (rpcErr) {
-      console.warn('RPC redeem_ticket failed or unavailable, falling back to direct query:', rpcErr)
-    }
-
-    // Attempt 2: Direct lookup in purchased_tickets table (supports both QR hash & manual ticket number entry)
-    let ticketQuery = supabase
-      .from('purchased_tickets')
-      .select('id, ticket_number, customer_name, ticket_type_name, status, updated_at, qr_code_hash')
-
+    // 1. First by ticket number (case-insensitive ilike)
     if (extractedTicketNumber) {
-      ticketQuery = ticketQuery.or(`qr_code_hash.eq.${qrHash},ticket_number.eq.${extractedTicketNumber}`)
-    } else {
-      ticketQuery = ticketQuery.eq('qr_code_hash', qrHash)
+      const { data } = await supabase
+        .from('purchased_tickets')
+        .select(ticketSelectFields)
+        .ilike('ticket_number', extractedTicketNumber)
+        .maybeSingle()
+      if (data) ticket = data
     }
 
-    const { data: ticket, error: ticketError } = await ticketQuery.maybeSingle()
+    // 2. Next by ticket primary key (UUID)
+    const targetTicketId = extractedTicketId || (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(qrDataString) ? qrDataString : null)
+    if (!ticket && targetTicketId) {
+      const { data } = await supabase
+        .from('purchased_tickets')
+        .select(ticketSelectFields)
+        .eq('id', targetTicketId)
+        .maybeSingle()
+      if (data) ticket = data
+    }
 
-    if (ticketError || !ticket) {
+    // 3. Next by qr_code_hash
+    if (!ticket) {
+      const { data } = await supabase
+        .from('purchased_tickets')
+        .select(ticketSelectFields)
+        .eq('qr_code_hash', qrHash)
+        .maybeSingle()
+      if (data) ticket = data
+    }
+
+    // 4. In case the input string is already the raw 64-char sha256 hash
+    if (!ticket && qrDataString.length === 64) {
+      const { data } = await supabase
+        .from('purchased_tickets')
+        .select(ticketSelectFields)
+        .eq('qr_code_hash', qrDataString)
+        .maybeSingle()
+      if (data) ticket = data
+    }
+
+    // 5. Fallback by orderId (selects first unused ticket in order, or first ticket)
+    if (!ticket && extractedOrderId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(extractedOrderId)) {
+      const { data: orderTickets } = await supabase
+        .from('purchased_tickets')
+        .select(ticketSelectFields)
+        .eq('ticket_order_id', extractedOrderId)
+        .order('created_at', { ascending: true })
+
+      if (orderTickets && orderTickets.length > 0) {
+        ticket = orderTickets.find((t: any) => t.status === 'valid' && !t.checked_in) || orderTickets[0]
+      }
+    }
+
+    if (!ticket) {
       return NextResponse.json(
         {
           success: false,
@@ -116,8 +151,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check status
-    if (ticket.status === 'used') {
+    // Check if ticket was already checked in or used
+    if (ticket.status === 'used' || ticket.checked_in === true) {
+      const redeemedTime = ticket.redeemed_at || ticket.checked_in_at || new Date().toISOString()
       return NextResponse.json(
         {
           success: false,
@@ -126,12 +162,14 @@ export async function POST(request: NextRequest) {
           ticket_number: ticket.ticket_number,
           customer_name: ticket.customer_name,
           ticket_type: ticket.ticket_type_name,
-          redeemed_at: ticket.updated_at,
+          event_title: (ticket.ticket_orders as any)?.events?.title || null,
+          redeemed_at: redeemedTime,
         },
         { status: 400 }
       )
     }
 
+    // Check if ticket was cancelled or refunded
     if (ticket.status === 'cancelled' || ticket.status === 'refunded') {
       return NextResponse.json(
         {
@@ -141,17 +179,26 @@ export async function POST(request: NextRequest) {
           ticket_number: ticket.ticket_number,
           customer_name: ticket.customer_name,
           ticket_type: ticket.ticket_type_name,
+          event_title: (ticket.ticket_orders as any)?.events?.title || null,
         },
         { status: 400 }
       )
     }
 
-    // Mark ticket as used/checked in
+    // Mark ticket as checked in / used
     const nowIso = new Date().toISOString()
+    const validStaffUuid = (typeof staffId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(staffId)) ? staffId : null
+
     const { error: updateError } = await supabase
       .from('purchased_tickets')
       .update({
         status: 'used',
+        checked_in: true,
+        checked_in_at: nowIso,
+        redeemed_at: nowIso,
+        redeemed_by: validStaffUuid,
+        redeemed_location: location || 'Main Entrance',
+        redemption_location: location || 'Main Entrance',
         updated_at: nowIso,
       })
       .eq('id', ticket.id)
@@ -162,7 +209,7 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: 'update_error',
-          message: 'Failed to update ticket check-in status',
+          message: 'Failed to update ticket check-in status: ' + updateError.message,
         },
         { status: 500 }
       )
@@ -174,6 +221,7 @@ export async function POST(request: NextRequest) {
       ticket_number: ticket.ticket_number,
       customer_name: ticket.customer_name,
       ticket_type: ticket.ticket_type_name,
+      event_title: (ticket.ticket_orders as any)?.events?.title || null,
       redeemed_at: nowIso,
     })
   } catch (error: any) {
@@ -184,4 +232,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

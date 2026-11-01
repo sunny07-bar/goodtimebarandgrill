@@ -6,6 +6,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { CheckCircle, Loader2, Ticket, AlertCircle } from 'lucide-react'
+import { safeEncodeSlug } from '@/lib/utils/slug'
 
 function PaymentSuccessContent() {
   const searchParams = useSearchParams()
@@ -35,7 +36,7 @@ function PaymentSuccessContent() {
           // verify-session now waits for ticket creation, so we can redirect immediately
           // Add a small delay to ensure everything is saved
           setTimeout(() => {
-            router.push(`/events/${encodeURIComponent(slug)}/tickets/${data.orderId}`)
+            router.push(`/events/${safeEncodeSlug(slug)}/tickets/${data.orderId}`)
           }, 1000)
         } else {
           setError(data.error || 'Payment verification failed')
@@ -97,7 +98,7 @@ function PaymentSuccessContent() {
           </div>
           {orderId && eventSlug && (
             <Button
-              onClick={() => router.push(`/events/${encodeURIComponent(eventSlug)}/tickets/${orderId}`)}
+              onClick={() => router.push(`/events/${safeEncodeSlug(eventSlug)}/tickets/${orderId}`)}
               className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
             >
               View Your Tickets

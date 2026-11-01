@@ -32,7 +32,6 @@ const nextConfig = {
     ignoreBuildErrors: false, // Enable TypeScript checks in production
   },
   experimental: {
-    optimizeCss: true,
     optimizePackageImports: ['lucide-react', 'date-fns', 'date-fns-tz'],
   },
   // Security headers and cache headers
@@ -181,31 +180,6 @@ const nextConfig = {
       test: /supabase\/functions\/.*\.ts$/,
       use: 'ignore-loader',
     });
-
-    // Production optimizations
-    if (isProduction && !isServer) {
-      config.optimization = {
-        ...config.optimization,
-        moduleIds: 'deterministic',
-        runtimeChunk: 'single',
-        splitChunks: {
-          chunks: 'all',
-          cacheGroups: {
-            vendor: {
-              test: /[\\/]node_modules[\\/]/,
-              name: 'vendors',
-              priority: 10,
-              reuseExistingChunk: true,
-            },
-            common: {
-              minChunks: 2,
-              priority: 5,
-              reuseExistingChunk: true,
-            },
-          },
-        },
-      };
-    }
 
     return config;
   },

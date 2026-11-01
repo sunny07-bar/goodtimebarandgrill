@@ -128,9 +128,11 @@ export async function POST(request: NextRequest) {
 
     // Check if event is in the past (compare in UTC, as events are stored in UTC)
     if (event && event.event_start) {
-      const eventStartUTC = new Date(event.event_start)
       const nowUTC = new Date()
-      if (eventStartUTC < nowUTC) {
+      const isPast = event.event_end 
+        ? new Date(event.event_end) < nowUTC 
+        : new Date(event.event_start) < nowUTC
+      if (isPast) {
         processingOrders.delete(orderId) // Remove from processing set
         return NextResponse.json(
           { error: 'Cannot complete purchase for past events' },
