@@ -6,10 +6,9 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Ticket, Loader2, CheckCircle, AlertCircle, Tag, Sparkles, Lock, ArrowLeft, Users } from 'lucide-react'
+import { Ticket, Loader2, AlertCircle, Tag, Sparkles, Lock, ArrowLeft, Users } from 'lucide-react'
 import { getEventBySlug, getEventPromotions } from '@/lib/queries'
 import AnimatedSection from '@/components/AnimatedSection'
-import EmailVerification from '@/components/EmailVerification'
 import { calculateTicketPromotions, TicketCartItem, PromotionRule } from '@/lib/utils/promotions'
 import { fullyDecodeSlug, safeEncodeSlug } from '@/lib/utils/slug'
 
@@ -26,8 +25,6 @@ export default function TicketPurchasePage() {
     phone: '',
   })
   const [error, setError] = useState<string | null>(null)
-  const [showEmailVerification, setShowEmailVerification] = useState(false)
-  const [emailVerified, setEmailVerified] = useState(false)
 
   // Promotion and coupon state
   const [promotions, setPromotions] = useState<PromotionRule[]>([])
@@ -39,59 +36,6 @@ export default function TicketPurchasePage() {
     loadEvent()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.slug])
-
-  // Check if email is already verified (from database or localStorage)
-  useEffect(() => {
-    const checkEmailVerification = async () => {
-      if (!customerInfo.email) {
-        setEmailVerified(false)
-        return
-      }
-
-      // First check database
-      try {
-        const response = await fetch('/api/email/check-verified', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: customerInfo.email }),
-        })
-
-        const data = await response.json()
-        if (data.verified) {
-          setEmailVerified(true)
-          // Also store in localStorage for faster subsequent checks
-          if (typeof window !== 'undefined') {
-            const verificationKey = `email_verified_${customerInfo.email.toLowerCase()}`
-            localStorage.setItem(verificationKey, Date.now().toString())
-          }
-          return
-        }
-      } catch (err) {
-        console.error('Error checking email verification:', err)
-      }
-
-      // Fallback to localStorage check
-      if (typeof window !== 'undefined') {
-        const verificationKey = `email_verified_${customerInfo.email.toLowerCase()}`
-        const storedVerification = localStorage.getItem(verificationKey)
-        if (storedVerification) {
-          const verificationTime = parseInt(storedVerification)
-          // Check if verification is still valid (1 hour for localStorage)
-          if (Date.now() - verificationTime < 60 * 60 * 1000) {
-            setEmailVerified(true)
-            return
-          } else {
-            // Expired, remove it
-            localStorage.removeItem(verificationKey)
-          }
-        }
-      }
-
-      setEmailVerified(false)
-    }
-
-    checkEmailVerification()
-  }, [customerInfo.email])
 
   const loadEvent = async () => {
     try {
@@ -228,28 +172,6 @@ export default function TicketPurchasePage() {
       return
     }
 
-    // Check if email is verified (database check happens in useEffect)
-    if (!emailVerified) {
-      // Show email verification step
-      setShowEmailVerification(true)
-      setError(null)
-      return
-    }
-
-    // Email is verified, proceed with purchase
-    proceedWithPurchase(tickets)
-  }
-
-  const handleEmailVerified = () => {
-    setEmailVerified(true)
-    setShowEmailVerification(false)
-    if (typeof window !== 'undefined') {
-      const verificationKey = `email_verified_${customerInfo.email.toLowerCase()}`
-      localStorage.setItem(verificationKey, Date.now().toString())
-    }
-    const tickets = Object.entries(ticketQuantities)
-      .filter(([_, qty]) => qty > 0)
-      .map(([ticketTypeId, quantity]) => ({ ticketTypeId, quantity }))
     proceedWithPurchase(tickets)
   }
 
@@ -569,28 +491,13 @@ export default function TicketPurchasePage() {
                     <Label htmlFor="email" className="text-xs font-semibold uppercase tracking-wider text-gray-300">
                       Email Address *
                     </Label>
-                    {emailVerified && (
-                      <span className="inline-flex items-center gap-1 text-[11px] text-emerald-400 font-semibold">
-                        <CheckCircle className="w-3.5 h-3.5" /> Verified
-                      </span>
-                    )}
                   </div>
                   <input
                     id="email"
                     type="email"
                     required
                     value={customerInfo.email}
-                    onChange={(e) => {
-                      const newEmail = e.target.value
-                      setCustomerInfo({ ...customerInfo, email: newEmail })
-                      if (newEmail !== customerInfo.email) {
-                        setEmailVerified(false)
-                        setShowEmailVerification(false)
-                        if (typeof window !== 'undefined') {
-                          localStorage.removeItem(`email_verified_${customerInfo.email.toLowerCase()}`)
-                        }
-                      }
-                    }}
+                    onChange={(e) => setCustomerInfo({ ...customerInfo, email: e.target.value })}
                     className="w-full h-11 px-3.5 rounded-xl bg-[#141414] border border-white/15 focus:border-[#F59E0B] focus:ring-1 focus:ring-[#F59E0B] text-white text-sm placeholder-gray-500 transition-all outline-none"
                     placeholder="john@example.com"
                   />
@@ -610,17 +517,6 @@ export default function TicketPurchasePage() {
                   />
                 </div>
               </div>
-
-              {/* Email Verification Step */}
-              {showEmailVerification && customerInfo.email && (
-                <div className="mt-4 p-4 rounded-xl border border-blue-400/40 bg-blue-500/10">
-                  <EmailVerification
-                    email={customerInfo.email}
-                    onVerified={handleEmailVerified}
-                    onCancel={() => setShowEmailVerification(false)}
-                  />
-                </div>
-              )}
             </div>
           </div>
 
@@ -772,7 +668,7 @@ export default function TicketPurchasePage() {
               <button
                 type="button"
                 onClick={handlePurchase}
-                disabled={purchasing || totalTickets === 0 || showEmailVerification}
+                disabled={purchasing || totalTickets === 0}
                 className="w-full h-12 md:h-14 rounded-xl bg-[#F59E0B] hover:bg-[#d97706] text-black font-extrabold text-base transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-[#F59E0B]/20 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
               >
                 {purchasing ? (
@@ -780,8 +676,6 @@ export default function TicketPurchasePage() {
                     <Loader2 className="h-5 w-5 animate-spin" />
                     <span>Processing Order...</span>
                   </>
-                ) : showEmailVerification ? (
-                  <span>Verify Email to Continue</span>
                 ) : (
                   <>
                     <Lock className="h-4 w-4" />
