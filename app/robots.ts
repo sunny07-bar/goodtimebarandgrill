@@ -14,6 +14,7 @@ export default function robots(): MetadataRoute.Robots {
         allow: '/',
         disallow: [
           '/api/',
+          '/events/*/purchase',
           '/events/*/payment',
           '/events/*/tickets/',
           '/events/payment/',
@@ -26,6 +27,7 @@ export default function robots(): MetadataRoute.Robots {
         allow: '/',
         disallow: [
           '/api/',
+          '/events/*/purchase',
           '/events/*/payment',
           '/events/*/tickets/',
           '/events/payment/',
@@ -37,3 +39,4 @@ export default function robots(): MetadataRoute.Robots {
     sitemap: `${baseUrl}/sitemap.xml`,
   }
 }
+

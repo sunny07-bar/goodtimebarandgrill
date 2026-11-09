@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -244,12 +244,7 @@ export default function TicketPurchasePage() {
   }
 
   if (!event) {
-    return (
-      <div className="container mx-auto px-4 py-12 text-center">
-        <AlertCircle className="h-12 w-12 mx-auto mb-4 text-red-600" />
-        <p>Event not found</p>
-      </div>
-    )
+    notFound()
   }
 
   const total = promoCalculation.finalTotal

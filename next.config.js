@@ -34,6 +34,22 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react', 'date-fns', 'date-fns-tz'],
   },
+  // Canonical redirects (www to non-www) to eliminate duplicate indexation
+  async redirects() {
+    return [
+      {
+        source: '/:path*',
+        has: [
+          {
+            type: 'host',
+            value: 'www.goodtimesbarandgrill.com',
+          },
+        ],
+        destination: 'https://goodtimesbarandgrill.com/:path*',
+        permanent: true,
+      },
+    ]
+  },
   // Security headers and cache headers
   async headers() {
     return [

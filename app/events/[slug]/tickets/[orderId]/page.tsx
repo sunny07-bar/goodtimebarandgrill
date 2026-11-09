@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, notFound } from 'next/navigation'
 import { Ticket, CheckCircle, Download, Mail, AlertCircle, Loader2 } from 'lucide-react'
 import { supabase } from '@/lib/db'
 import { getImageUrl } from '@/lib/image-utils'
@@ -583,13 +583,7 @@ export default function TicketConfirmationPage() {
   }
 
   if (!order) {
-    return (
-      <div className="container mx-auto px-4 py-12 text-center">
-        <AlertCircle className="h-12 w-12 mx-auto mb-4 text-red-600" />
-        <p className="text-xl font-semibold mb-2">Order not found</p>
-        <p className="text-gray-600">The order ID you're looking for doesn't exist.</p>
-      </div>
-    )
+    notFound()
   }
 
   if (tickets.length === 0) {

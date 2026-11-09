@@ -52,6 +52,9 @@ export const metadata: Metadata = {
     process.env.NEXT_PUBLIC_BASE_URL ||
     'https://goodtimesbarandgrill.com'
   ),
+  alternates: {
+    canonical: './',
+  },
   openGraph: {
     type: "website",
     locale: "en_US",

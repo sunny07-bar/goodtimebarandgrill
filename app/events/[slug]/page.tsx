@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, notFound } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Calendar, MapPin, Clock, Ticket, Loader2, ArrowLeft, ArrowRight, ExternalLink, Sparkles, Tag } from 'lucide-react'
@@ -85,15 +85,7 @@ export default function EventDetailPage() {
   }
 
   if (!event) {
-    return (
-      <div className="section-bg-primary section-spacing">
-        <div className="container-global text-center">
-          <div className="card-premium max-w-md mx-auto">
-            <p className="body-text text-lg">Event not found</p>
-          </div>
-        </div>
-      </div>
-    )
+    notFound()
   }
 
   // Don't convert here - formatFloridaTime already handles timezone conversion
