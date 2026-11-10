@@ -4,7 +4,7 @@ export default function robots(): MetadataRoute.Robots {
   const baseUrl = (
     process.env.NEXT_PUBLIC_SITE_URL ||
     process.env.NEXT_PUBLIC_BASE_URL ||
-    'https://goodtimesbarandgrill.com'
+    'https://www.goodtimesbarandgrill.com'
   ).replace(/\/$/, '')
 
   return {

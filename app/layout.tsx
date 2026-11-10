@@ -50,7 +50,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_SITE_URL ||
     process.env.NEXT_PUBLIC_BASE_URL ||
-    'https://goodtimesbarandgrill.com'
+    'https://www.goodtimesbarandgrill.com'
   ),
   alternates: {
     canonical: './',
@@ -61,7 +61,7 @@ export const metadata: Metadata = {
     url:
       process.env.NEXT_PUBLIC_SITE_URL ||
       process.env.NEXT_PUBLIC_BASE_URL ||
-      'https://goodtimesbarandgrill.com',
+      'https://www.goodtimesbarandgrill.com',
     title: "Good Times Bar & Grill - Live Music, Great Food",
     description: "Good Times Bar and Grill is your destination for great food, awesome drinks, live music and more!",
     siteName: "Good Times Bar & Grill",

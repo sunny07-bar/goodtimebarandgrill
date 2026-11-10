@@ -9,7 +9,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = (
     process.env.NEXT_PUBLIC_SITE_URL ||
     process.env.NEXT_PUBLIC_BASE_URL ||
-    'https://goodtimesbarandgrill.com'
+    'https://www.goodtimesbarandgrill.com'
   ).replace(/\/$/, '')
 
   const now = new Date()
