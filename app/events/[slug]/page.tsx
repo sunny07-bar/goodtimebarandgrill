@@ -313,7 +313,7 @@ export default function EventDetailPage() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
                       {event.event_tickets.map((ticket: any) => {
-                        const available = (ticket.quantity_total || 0) - ticket.quantity_sold
+                        const isSoldOut = ticket.quantity_total ? (ticket.quantity_total - ticket.quantity_sold) <= 0 : false
                         const hasOffer = promotions.some(p => !p.ticket_type_id || p.ticket_type_id === ticket.id)
                         return (
                           <div key={ticket.id} className="card-dark p-5 md:p-6 hover:border-[#F59E0B]/50 hover:shadow-lg transition-all duration-300 rounded-xl relative flex flex-col justify-between">
@@ -327,10 +327,10 @@ export default function EventDetailPage() {
                               <p className="text-3xl md:text-4xl font-bold price-amber mb-2">
                                 ${ticket.price.toFixed(2)}
                               </p>
-                              {ticket.quantity_total && (
-                                <p className="body-text text-sm md:text-base opacity-75">
-                                  {available} of {ticket.quantity_total} available
-                                </p>
+                              {isSoldOut && (
+                                <span className="inline-block text-xs font-semibold px-2.5 py-1 rounded-full bg-red-500/15 text-red-400 border border-red-500/20">
+                                  Sold Out
+                                </span>
                               )}
                             </div>
                             <button

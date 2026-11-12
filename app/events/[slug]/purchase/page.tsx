@@ -350,11 +350,6 @@ export default function TicketPurchasePage() {
                           <div>
                             <h4 className="text-base md:text-lg font-bold text-white flex items-center gap-2">
                               {ticket.name}
-                              {ticket.quantity_total && !isSoldOut && (
-                                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/20">
-                                  {available} left
-                                </span>
-                              )}
                               {isSoldOut && (
                                 <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 border border-red-500/20">
                                   Sold Out
